@@ -243,7 +243,7 @@ function format_price($price) {
     if ($price == 0) {
         return 'Contact';
     }
-    return '$' . number_format($price, 2);
+    return number_format($price, 2)." đ";
 }
 
 function sanitize_output($text) {

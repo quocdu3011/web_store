@@ -29,7 +29,7 @@ $stmt = $conn->prepare("SELECT c.*, p.name as parent_name, p.slug as parent_slug
 $stmt->bind_param("i", $product['category_id']);
 $stmt->execute();
 $category = $stmt->get_result()->fetch_assoc();
-
+$original_category = $category;
 // Get product specifications
 $stmt = $conn->prepare("SELECT * FROM product_specs WHERE product_id = ?");
 $stmt->bind_param("i", $product['id']);
@@ -185,18 +185,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rating'], $_SESSION['
                     </a>
                 </li>
 
-                <?php if (!empty($category['parent_slug']) && !empty($category['parent_name'])): ?>
+                <?php if (!empty($original_category['parent_slug']) && !empty($original_category['parent_name'])): ?>
                     <li class="breadcrumb-item">
-                        <a href="category.php?slug=<?php echo $category['parent_slug']; ?>">
-                            <?php echo $category['parent_name']; ?>
+                        <a href="category.php?slug=<?php echo $original_category['parent_slug']; ?>">
+                            <?php echo $original_category['parent_name']; ?>
                         </a>
                     </li>
                 <?php endif; ?>
 
-                <?php if (!empty($category['slug']) && !empty($category['name'])): ?>
+                <?php if (!empty($original_category['slug']) && !empty($original_category['name'])): ?>
                     <li class="breadcrumb-item">
-                        <a href="category.php?slug=<?php echo $category['slug']; ?>">
-                            <?php echo $category['name']; ?>
+                        <a href="category.php?slug=<?php echo $original_category['slug']; ?>">
+                            <?php echo $original_category['name']; ?>
                         </a>
                     </li>
                 <?php endif; ?>

@@ -1,0 +1,13 @@
+.header-container{
+    background-color: #d70018;
+}
+.btn.ms-2{
+    background-color: #e9ecef;
+    color: #000;
+}
+.form-control{
+    border-radius: 15px;
+}
+.header-logo {
+    max-height: 50px;
+}

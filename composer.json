@@ -1,0 +1,21 @@
+{
+    "name": "tech-store/ecommerce",
+    "description": "A PHP e-commerce website for selling cameras, computers, and equipment",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "google/apiclient": "^2.12.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "TechStore\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "your.email@example.com"
+        }
+    ],
+    "minimum-stability": "stable"
+} 

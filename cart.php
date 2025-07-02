@@ -147,42 +147,99 @@ $total = $subtotal + $shipping_cost;
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="assets/js/main.js"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const selectAll = document.getElementById('select-all');
-                const productCheckboxes = document.querySelectorAll('.product-checkbox');
-                const subtotalSpan = document.querySelector('.cart-subtotal');
-                const shippingSpan = document.querySelector('.cart-shipping');
-                const totalSpan = document.querySelector('.cart-total');
+            document.querySelectorAll('.cart-item').forEach(function (cartItem) {
+                const decrementBtn = cartItem.querySelector('.decrement');
+                const incrementBtn = cartItem.querySelector('.increment');
+                const quantityInput = cartItem.querySelector('.quantity-input');
+                const removeBtn = cartItem.querySelector('.remove-from-cart');
+                const productId = cartItem.dataset.productId;
 
-                function updateSummary() {
-                    let subtotal = 0;
-                    productCheckboxes.forEach(function (checkbox) {
-                        if (checkbox.checked) {
-                            subtotal += parseInt(checkbox.getAttribute('data-subtotal'));
-                        }
-                    });
-                    subtotalSpan.textContent = subtotal.toLocaleString('vi-VN') + '₫';
-                    let shipping = subtotal > 0 ? parseInt(shippingSpan.textContent.replace(/\D/g, '')) : 0;
-                    totalSpan.textContent = (subtotal + shipping).toLocaleString('vi-VN') + '₫';
+                let pricePerItem = parseInt(
+                    cartItem.querySelector('.item-subtotal').textContent.replace(/\D/g, '')
+                );
+                if (quantityInput) {
+                    pricePerItem = pricePerItem / parseInt(quantityInput.value);
                 }
 
-                selectAll.addEventListener('change', function () {
-                    productCheckboxes.forEach(function (checkbox) {
-                        checkbox.checked = selectAll.checked;
+                function recalcSummary() {
+                    let subtotal = 0;
+                    document.querySelectorAll('.cart-item').forEach(function (item) {
+                        const itemSubtotal = parseInt(
+                            item.querySelector('.item-subtotal').textContent.replace(/\D/g, '')
+                        );
+                        subtotal += itemSubtotal;
                     });
-                    updateSummary();
-                });
+                    document.querySelector('.cart-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
+                    const shipping = parseInt(document.querySelector('.cart-shipping').textContent.replace(/\D/g, ''));
+                    const total = subtotal + shipping;
+                    document.querySelector('.cart-total').textContent = total.toLocaleString('vi-VN') + '₫';
+                }
 
-                productCheckboxes.forEach(function (checkbox) {
-                    checkbox.addEventListener('change', function () {
-                        const allChecked = Array.from(productCheckboxes).every(cb => cb.checked);
-                        selectAll.checked = allChecked;
-                        updateSummary();
+                if (decrementBtn && quantityInput) {
+                    decrementBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const val = parseInt(quantityInput.value);
+                        if (val > 1) {
+                            quantityInput.value = val - 1;
+                            quantityInput.dispatchEvent(new Event('change'));
+                        }
                     });
-                });
+                }
 
-                // Mặc định: tổng = 0
-                updateSummary();
+                if (incrementBtn && quantityInput) {
+                    incrementBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const val = parseInt(quantityInput.value);
+                        quantityInput.value = val + 1;
+                        quantityInput.dispatchEvent(new Event('change'));
+                    });
+                }
+
+                if (quantityInput) {
+                    quantityInput.addEventListener('change', function () {
+                        if (parseInt(quantityInput.value) < 1) quantityInput.value = 1;
+                        const newQty = parseInt(quantityInput.value);
+                        const newSubtotal = pricePerItem * newQty;
+                        cartItem.querySelector('.item-subtotal').textContent = newSubtotal.toLocaleString('vi-VN') + '₫';
+                        recalcSummary();
+                    });
+                }
+
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function () {
+                        fetch('includes/remove_from_cart.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: `product_id=${productId}`
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.login) {
+                                    window.location.href = 'login.php';
+                                    return;
+                                }
+                                if (data.success) {
+                                    cartItem.remove();
+                                    recalcSummary();
+                                    updateCartCount(data.cartCount || 0);
+                                    if (document.querySelectorAll('.cart-item').length === 0) {
+                                        window.location.reload();
+                                    }
+                                    showToast('Sản phẩm đã được xóa khỏi giỏ hàng.', 'success');
+                                } else {
+                                    showToast('Có lỗi xảy ra khi xóa sản phẩm khỏi giỏ hàng.', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error removing from cart:', error);
+                            });
+                    });
+                }
+
             });
         </script>
 

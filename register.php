@@ -165,8 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="text-center my-4">
             <p class="text-muted">Hoặc đăng ký bằng</p>
             <div class="d-flex justify-content-center gap-3">
-                <a href="auth/google-login.php" class="btn social-login-btn"><i class="bi bi-google"></i> Google</a>
-                <a href="auth/facebook-login.php" class="btn social-login-btn"><i class="bi bi-facebook"></i>
+                <a href="auth/google_login.php" class="btn social-login-btn"><i class="bi bi-google"></i> Google</a>
+                <a href="auth/facebook_login.php" class="btn social-login-btn"><i class="bi bi-facebook"></i>
                     Facebook</a>
             </div>
         </div>

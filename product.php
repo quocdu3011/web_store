@@ -230,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rating'], $_SESSION['
             </div>
 
             <!-- Product Details -->
-            <div class="col-md-7">
+            <div class="col-md-7 product-item">
                 <h1 class="mb-3"><?php echo $product['name']; ?></h1>
 
                 <?php if ($product['is_new']): ?>

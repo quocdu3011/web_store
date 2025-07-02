@@ -466,3 +466,8 @@ footer a:hover {
 @keyframes fadeOut {
   to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
 }
+.star-icon {
+  font-size: 1.5rem;
+  color: gold;
+  cursor: pointer;
+}

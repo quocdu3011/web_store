@@ -504,3 +504,18 @@ function get_order_history($order_id) {
     $result = $stmt->get_result();
     return $result->fetch_all(MYSQLI_ASSOC);
 } 
+function get_rating_stars($rating, $rating_count = 1) {
+    if ($rating_count <= 0) {
+        return '<span class="text-muted">Chưa có đánh giá</span>';
+    }
+    $numstars = $rating/$rating_count;
+    $stars = '';
+    for ($i = 1; $i <= 5; $i++) {
+        if ($i <= $numstars) {
+            $stars .= '<i class="fas fa-star text-warning"></i>';
+        } else {
+            $stars .= '<i class="far fa-star text-muted"></i>';
+        }
+    }
+    return $stars;
+}

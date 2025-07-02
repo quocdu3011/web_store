@@ -204,9 +204,9 @@ function updateCartTotal(total) {
 }
 function animateAddToCart(buttonEl) {
     // Normalize the button element in case a NodeList or jQuery object is passed
-    
+
     if (!buttonEl) return;
-    
+
     if (buttonEl instanceof NodeList || Array.isArray(buttonEl)) {
         buttonEl = buttonEl[0];
     } else if (buttonEl.jquery) {
@@ -219,7 +219,7 @@ function animateAddToCart(buttonEl) {
     const productImg = buttonEl.closest('.card')?.querySelector('img');
     const cartIcon = document.querySelector('.fa-shopping-cart, .cart-icon');
     if (!productImg || !cartIcon) return;
-    
+
     const imgClone = productImg.cloneNode(true);
     const imgRect = productImg.getBoundingClientRect();
 

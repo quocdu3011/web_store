@@ -18,6 +18,7 @@ if (isset($_SESSION['success_message'])) {
     echo "<script>showToast('$message','success');</script>";
     unset($_SESSION['success_message']);
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -111,6 +112,10 @@ if (isset($_SESSION['success_message'])) {
                                 <div class="card-body d-flex flex-column flex-grow-1">
                                     <h5 class="card-title"><?php echo $product['name']; ?></h5>
                                     <p class="card-text text-truncate"><?php echo $product['description']; ?></p>
+                                    <div class="ratingresult">
+                                        <?php echo get_rating_stars($product['rating'],$product['rating_count']); ?>
+                                        <span class="text-muted">(<?php echo $product['rating_count']; ?> đánh giá)</span>
+                                    </div>
                                     <div class="d-flex flex-column mt-auto">
                                         <div class="d-flex flex-column">
                                             <?php 

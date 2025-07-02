@@ -3,6 +3,8 @@ session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
+
+
 // Get product slug from URL
 $slug = isset($_GET['slug']) ? $_GET['slug'] : '';
 
@@ -50,7 +52,45 @@ $stmt = $conn->prepare("SELECT * FROM products WHERE category_id = ? LIMIT 6");
 $stmt->bind_param("i", $product['category_id']);
 $stmt->execute();
 $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rating'], $_SESSION['user_id'])) {
+    $new_rating = (int) $_POST['rating'];
+    $user_id = $_SESSION['user_id'];
+    $product_id = $product['id'];
+
+    if ($new_rating >= 1 && $new_rating <= 5) {
+        // Kiểm tra xem user đã đánh giá chưa
+        $checkStmt = $conn->prepare("SELECT id FROM reviews WHERE user_id = ? AND product_id = ?");
+        $checkStmt->bind_param("ii", $user_id, $product_id);
+        $checkStmt->execute();
+        $checkStmt->store_result();
+
+        if ($checkStmt->num_rows > 0) {
+            $_SESSION['rating_message'] = 'Bạn đã đánh giá sản phẩm này trước đó.';
+        } else {
+            // Lưu đánh giá mới
+            $insertStmt = $conn->prepare("INSERT INTO reviews (user_id, product_id, rating) VALUES (?, ?, ?)");
+            $insertStmt->bind_param("iii", $user_id, $product_id, $new_rating);
+            $insertStmt->execute();
+
+            // Cập nhật sản phẩm
+            $total_rating = $product['rating'] * $product['rating_count'];
+            $new_count = $product['rating_count'] + 1;
+            $new_average = ($total_rating + $new_rating) / $new_count;
+
+            $updateStmt = $conn->prepare("UPDATE products SET rating = ?, rating_count = ? WHERE id = ?");
+            $updateStmt->bind_param("dii", $new_average, $new_count, $product_id);
+            $updateStmt->execute();
+
+            $_SESSION['rating_message'] = 'Cảm ơn bạn đã đánh giá!';
+        }
+
+        // Reload trang để hiện thông báo
+        header("Location: product.php?slug=" . urlencode($slug));
+        exit;
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -62,6 +102,74 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+<style>
+    .breadcrumb-wrapper {
+        padding: 10px 0;
+        background-color: #fff;
+    }
+
+    .custom-breadcrumb {
+        background-color: transparent;
+        margin-bottom: 0;
+        font-size: 14px;
+        color: #212121;
+        padding: 0;
+    }
+
+    .custom-breadcrumb .breadcrumb-item+.breadcrumb-item::before {
+        content: "/";
+        color: #999;
+        padding: 0 10px;
+    }
+
+    .custom-breadcrumb .breadcrumb-item a {
+        color: #212121;
+        text-decoration: none;
+        font-weight: 400;
+    }
+
+    .custom-breadcrumb .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .custom-breadcrumb .breadcrumb-item.active {
+        color: #757575;
+        font-weight: 400;
+        pointer-events: none;
+    }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const breadcrumb = document.querySelector(".custom-breadcrumb");
+        if (breadcrumb) {
+            breadcrumb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+</script>
+<script>
+    const stars = document.querySelectorAll('.star-icon');
+    const ratingValue = document.getElementById('rating-value');
+
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const value = star.getAttribute('data-value');
+            ratingValue.value = value;
+            highlightStars(value);
+        });
+    });
+
+    function highlightStars(value) {
+        stars.forEach(star => {
+            const starValue = star.getAttribute('data-value');
+            star.classList.remove('fa-solid');
+            star.classList.add('fa-regular');
+            if (starValue <= value) {
+                star.classList.remove('fa-regular');
+                star.classList.add('fa-solid');
+            }
+        });
+    }
+</script>
 
 <body>
     <?php include 'includes/header.php'; ?>
@@ -69,22 +177,36 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
     <div class="container my-4">
         <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="index.php">Trang chủ</a></li>
+        <nav aria-label="breadcrumb" class="breadcrumb-wrapper mb-3">
+            <ol class="breadcrumb custom-breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="index.php" class="d-flex align-items-center text-dark">
+                        <i class="bi bi-house-door-fill me-1"></i>Trang chủ
+                    </a>
+                </li>
+
                 <?php if (!empty($category['parent_slug']) && !empty($category['parent_name'])): ?>
-                    <li class="breadcrumb-item"><a
-                            href="category.php?slug=<?php echo $category['parent_slug']; ?>"><?php echo $category['parent_name']; ?></a>
+                    <li class="breadcrumb-item">
+                        <a href="category.php?slug=<?php echo $category['parent_slug']; ?>">
+                            <?php echo $category['parent_name']; ?>
+                        </a>
                     </li>
                 <?php endif; ?>
+
                 <?php if (!empty($category['slug']) && !empty($category['name'])): ?>
-                    <li class="breadcrumb-item"><a
-                            href="category.php?slug=<?php echo $category['slug']; ?>"><?php echo $category['name']; ?></a>
+                    <li class="breadcrumb-item">
+                        <a href="category.php?slug=<?php echo $category['slug']; ?>">
+                            <?php echo $category['name']; ?>
+                        </a>
                     </li>
                 <?php endif; ?>
-                <li class="breadcrumb-item active" aria-current="page"><?php echo $product['name']; ?></li>
+
+                <li class="breadcrumb-item active" aria-current="page">
+                    <?php echo htmlspecialchars($product['name']); ?>
+                </li>
             </ol>
         </nav>
+
 
         <div class="row">
             <!-- Product Images -->
@@ -125,6 +247,10 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 $current_price = get_current_price($product);
                 $has_discount = $current_price < $product['price'];
                 ?>
+                <div class="mb-3">
+                    <?php echo get_rating_stars($product['rating'], $product['rating_count']); ?>
+                    <span class="text-muted">(<?php echo $product['rating_count']; ?> đánh giá)</span>
+                </div>
 
                 <div class="mb-3">
                     <?php if ($has_discount): ?>
@@ -174,6 +300,46 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <h5>Mô tả sản phẩm</h5>
                     <p><?php echo nl2br($product['description']); ?></p>
                 </div>
+                <?php if (isset($_SESSION['rating_message'])): ?>
+                    <div class="alert alert-info">
+                        <?php echo $_SESSION['rating_message'];
+                        unset($_SESSION['rating_message']); ?>
+                    </div>
+                <?php endif; ?>
+                <?php
+                $alreadyRated = false;
+                if (isset($_SESSION['user_id'])) {
+                    $stmt = $conn->prepare("SELECT id FROM reviews WHERE user_id = ? AND product_id = ?");
+                    $stmt->bind_param("ii", $_SESSION['user_id'], $product['id']);
+                    $stmt->execute();
+                    $stmt->store_result();
+                    $alreadyRated = $stmt->num_rows > 0;
+                }
+                ?>
+
+                <div class="mb-4">
+                    <h5>Đánh giá sản phẩm</h5>
+
+                    <!-- Nếu đã đăng nhập và chưa đánh giá -->
+                    <?php if (isset($_SESSION['user_id']) && !$alreadyRated): ?>
+                        <form method="POST" class="d-flex align-items-center gap-2">
+                            <label for="rating" class="form-label me-2 mb-0">Đánh giá:</label>
+                            <select name="rating" id="rating" class="form-select w-auto" required>
+                                <option value="">Chọn sao</option>
+                                <option value="5">★★★★★ - Tuyệt vời</option>
+                                <option value="4">★★★★ - Tốt</option>
+                                <option value="3">★★★ - Bình thường</option>
+                                <option value="2">★★ - Tệ</option>
+                                <option value="1">★ - Rất tệ</option>
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">Gửi</button>
+                        </form>
+                    <?php elseif ($alreadyRated): ?>
+                        <div class="text-muted mt-2">Bạn đã đánh giá sản phẩm này.</div>
+                    <?php else: ?>
+                        <div class="text-muted">Vui lòng <a href="login.php">đăng nhập</a> để đánh giá sản phẩm.</div>
+                    <?php endif; ?>
+                </div>
 
                 <?php if (!empty($specs)): ?>
                     <div class="specs-section mb-4">
@@ -215,6 +381,10 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                 <div class="card-body d-flex flex-column flex-grow-1">
                                     <h5 class="card-title"><?php echo $related['name']; ?></h5>
                                     <p class="card-text text-truncate"><?php echo $related['description']; ?></p>
+                                    <div class="ratingresult">
+                                        <?php echo get_rating_stars($related['rating'], $related['rating_count']); ?>
+                                        <span class="text-muted">(<?php echo $related['rating_count']; ?> đánh giá)</span>
+                                    </div>
                                     <div class="d-flex flex-column mt-auto">
                                         <div class="d-flex flex-column">
                                             <?php
@@ -227,10 +397,12 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                                         class="text-muted"><?php echo number_format($related['price'], 0, ',', '.'); ?>₫</del>
                                                 </p>
                                                 <p class="text-danger fw-bold">
-                                                    <?php echo number_format($current_price, 0, ',', '.'); ?>₫</p>
+                                                    <?php echo number_format($current_price, 0, ',', '.'); ?>₫
+                                                </p>
                                             <?php else: ?>
                                                 <p class="text-danger fw-bold">
-                                                    <?php echo number_format($related['price'], 0, ',', '.'); ?>₫</p>
+                                                    <?php echo number_format($related['price'], 0, ',', '.'); ?>₫
+                                                </p>
                                             <?php endif; ?>
                                         </div>
                                         <div class="d-flex flex-column align-items-center">
@@ -324,3 +496,18 @@ $related_products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 </body>
 
 </html>
+<?php if (isset($_SESSION['user_id'])): ?>
+    <div class="mt-5">
+        <h4>Đánh giá sản phẩm</h4>
+        <form id="rating-form" method="POST" class="d-flex flex-column" style="max-width: 300px;">
+            <label class="mb-2">Chọn số sao:</label>
+            <div class="mb-3 d-flex gap-1">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <i class="fa-star fa-regular star-icon" data-value="<?php echo $i; ?>"></i>
+                <?php endfor; ?>
+                <input type="hidden" name="rating" id="rating-value">
+            </div>
+            <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+        </form>
+    </div>
+<?php endif; ?>

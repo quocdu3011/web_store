@@ -90,6 +90,54 @@ if (!$is_parent) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+<style>
+    /*breadcrumb styles*/
+    .breadcrumb-wrapper {
+        background-color: #fff;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .custom-breadcrumb {
+        margin-bottom: 0;
+        font-size: 14px;
+        color: #222;
+        background: none;
+    }
+
+    .custom-breadcrumb .breadcrumb-item+.breadcrumb-item::before {
+        content: "/";
+        padding: 0 8px;
+        color: #999;
+        font-weight: 400;
+    }
+
+    .custom-breadcrumb .breadcrumb-item a {
+        text-decoration: none;
+        color: #222;
+        font-weight: 400;
+        transition: color 0.2s ease;
+    }
+
+    .custom-breadcrumb .breadcrumb-item a:hover {
+        color: #dc3545;
+        text-decoration: underline;
+    }
+
+    .custom-breadcrumb .breadcrumb-item.active {
+        color: #999;
+        font-weight: 400;
+        pointer-events: none;
+    }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const breadcrumb = document.querySelector(".custom-breadcrumb");
+        if (breadcrumb) {
+            breadcrumb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+</script>
 
 <body>
     <?php include 'includes/header.php'; ?>
@@ -170,26 +218,41 @@ if (!$is_parent) {
             <!-- Main Content -->
             <div class="col-md-9">
                 <!-- Breadcrumb -->
-                <nav aria-label="breadcrumb" class="mb-4">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="index.php">Trang chủ</a></li>
+                <nav aria-label="breadcrumb" class="breadcrumb-wrapper mb-3">
+                    <ol class="breadcrumb custom-breadcrumb align-items-center">
+                        <li class="breadcrumb-item">
+                            <a href="index.php" class="d-flex align-items-center text-dark">
+                                <i class="bi bi-house-door-fill me-1"></i> Trang chủ
+                            </a>
+                        </li>
+
                         <?php if (!$is_parent): ?>
                             <li class="breadcrumb-item">
                                 <a href="category.php?slug=<?php echo $original_category['parent_slug']; ?>">
                                     <?php echo $original_category['parent_name']; ?>
                                 </a>
                             </li>
-                            <li class="breadcrumb-item active" aria-current="page"><?php echo $original_category['name']; ?>
+                            <li class="breadcrumb-item">
+                                <a href="category.php?slug=<?php echo $original_category['slug']; ?>">
+                                    <?php echo $original_category['name']; ?>
+                                </a>
                             </li>
                         <?php else: ?>
-                            <li class="breadcrumb-item active" aria-current="page"><?php echo $parent_category['name']; ?>
+                            <li class="breadcrumb-item">
+                                <a href="category.php?slug=<?php echo $parent_category['slug']; ?>">
+                                    <?php echo $parent_category['name']; ?>
+                                </a>
                             </li>
                         <?php endif; ?>
+
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <?php echo htmlspecialchars($product_name ?? ''); ?>
+                        </li>
                     </ol>
                 </nav>
 
-                <h1 class="mb-4"><?php echo $is_parent ? $parent_category['name'] : $category['name']; ?></h1>
 
+                <h1 class="mb-4"><?php echo $is_parent ? $parent_category['name'] : $original_category['name']; ?></h1>
                 <?php if ($is_parent): ?>
                     <?php if (empty($original_child_categories)): ?>
                         <div class="alert alert-info">Không có danh mục con nào trong danh mục này.</div>
@@ -249,8 +312,8 @@ if (!$is_parent) {
                         </div>
                     <?php endif; ?>
                 <?php else: ?>
-                    <?php if (!empty($category['description'])): ?>
-                        <p class="lead mb-4"><?php echo $category['description']; ?></p>
+                    <?php if (!empty($original_category['description'])): ?>
+                        <p class="lead mb-4"><?php echo $original_category['description']; ?></p>
                     <?php endif; ?>
                     <?php if (empty($products)): ?>
                         <div class="alert alert-info">Không có sản phẩm nào trong danh mục này.</div>
@@ -264,17 +327,22 @@ if (!$is_parent) {
                                 <div class="col-md-4 mb-4">
                                     <div class="card h-100 d-flex flex-column">
                                         <?php if (!empty($product['image'])): ?>
-                                            <img src="<?php echo filter_var($product['image'], FILTER_VALIDATE_URL) ? $product['image'] : 'uploads/' . $product['image']; ?>" class="card-img-top"
-                                                alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                            <img src="<?php echo filter_var($product['image'], FILTER_VALIDATE_URL) ? $product['image'] : 'uploads/' . $product['image']; ?>"
+                                                class="card-img-top" alt="<?php echo htmlspecialchars($product['name']); ?>">
                                         <?php endif; ?>
                                         <div class="card-body d-flex flex-column flex-grow-1">
                                             <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
                                             <p class="card-text"><?php echo htmlspecialchars($product['description']); ?></p>
+                                            <div class="ratingresult">
+                                                <?php echo get_rating_stars($product['rating'], $product['rating_count']); ?>
+                                                <span class="text-muted">(<?php echo $product['rating_count']; ?> đánh giá)</span>
+                                            </div>
                                             <div class="d-flex flex-column mt-auto">
                                                 <p class="card-text fw-bold text-danger">
                                                     <?php echo format_price(get_current_price($product)); ?>
                                                 </p>
-                                                <a href="product.php?slug=<?php echo $product['slug']; ?>" class="btn btn-primary">Xem chi tiết</a>
+                                                <a href="product.php?slug=<?php echo $product['slug']; ?>"
+                                                    class="btn btn-primary">Xem chi tiết</a>
                                             </div>
                                         </div>
                                     </div>

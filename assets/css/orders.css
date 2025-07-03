@@ -1,0 +1,45 @@
+.order-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.order-name {
+  text-decoration: none;
+  font-weight: 500;
+  color: #212529;
+}
+
+.order-name:hover {
+  color: #0d6efd;
+}
+
+.order-card {
+  border: 1px solid #e1e1e1;
+  transition: 0.3s;
+}
+
+.order-card:hover {
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+.order-status-pending {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.order-status-processing {
+  background-color: #0dcaf0;
+  color: #fff;
+}
+
+.order-status-completed {
+  background-color: #198754;
+  color: #fff;
+}
+
+.order-status-cancelled {
+  background-color: #dc3545;
+  color: #fff;
+}

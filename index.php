@@ -22,6 +22,7 @@ if (isset($_SESSION['success_message'])) {
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,6 +34,7 @@ if (isset($_SESSION['success_message'])) {
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <?php include 'includes/header.php'; ?>
     <?php include 'includes/navigation.php'; ?>
@@ -50,9 +52,12 @@ if (isset($_SESSION['success_message'])) {
                         <?php foreach ($featured_products as $product): ?>
                             <div class="mb-3">
                                 <a href="product.php?slug=<?php echo $product['slug']; ?>" class="text-decoration-none">
-                                    <img src="<?php echo $product['image']; ?>" class="img-fluid mb-2" alt="<?php echo $product['name']; ?>">
+                                    <img src="<?php echo $product['image']; ?>" class="img-fluid mb-2"
+                                        alt="<?php echo $product['name']; ?>">
                                     <h6 class="text-dark mb-1"><?php echo $product['name']; ?></h6>
-                                    <p class="text-danger mb-0"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</p>
+                                    <p class="text-danger mb-0">
+                                        <?php echo number_format($product['price'], 0, ',', '.'); ?>₫
+                                    </p>
                                 </a>
                             </div>
                         <?php endforeach; ?>
@@ -80,7 +85,8 @@ if (isset($_SESSION['success_message'])) {
                 <div id="heroCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
                     <div class="carousel-inner">
                         <div class="carousel-item active">
-                            <img src="assets/images/m4-len-doi-tang-airpods-4.png" class="d-block w-100" alt="Công Nghệ Mới Nhất">
+                            <img src="assets/images/m4-len-doi-tang-airpods-4.png" class="d-block w-100"
+                                alt="Công Nghệ Mới Nhất">
                             <div class="carousel-caption">
                                 <h3>Khám Phá Công Nghệ Mới</h3>
                                 <p>Sản phẩm chính hãng với bảo hành uy tín</p>
@@ -94,10 +100,12 @@ if (isset($_SESSION['success_message'])) {
                             </div>
                         </div>
                     </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel"
+                        data-bs-slide="prev">
                         <span class="carousel-control-prev-icon"></span>
                     </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel"
+                        data-bs-slide="next">
                         <span class="carousel-control-next-icon"></span>
                     </button>
                 </div>
@@ -108,41 +116,61 @@ if (isset($_SESSION['success_message'])) {
                     <?php foreach ($new_products as $product): ?>
                         <div class="col-md-4 mb-4">
                             <div class="card h-100 d-flex flex-column">
-                                <img src="<?php echo filter_var($product['image'], FILTER_VALIDATE_URL) ? $product['image'] : 'uploads/' . $product['image']; ?>" class="card-img-top" alt="<?php echo $product['name']; ?>">
+                                <img src="<?php echo filter_var($product['image'], FILTER_VALIDATE_URL) ? $product['image'] : 'uploads/' . $product['image']; ?>"
+                                    class="card-img-top" alt="<?php echo $product['name']; ?>">
                                 <div class="card-body d-flex flex-column flex-grow-1">
                                     <h5 class="card-title"><?php echo $product['name']; ?></h5>
                                     <p class="card-text text-truncate"><?php echo $product['description']; ?></p>
-                                    <div class="ratingresult">
-                                        <?php echo get_rating_stars($product['rating'],$product['rating_count']); ?>
+
+                                    <div class="ratingresult mb-2">
+                                        <?php echo get_rating_stars($product['rating'], $product['rating_count']); ?>
                                         <span class="text-muted">(<?php echo $product['rating_count']; ?> đánh giá)</span>
                                     </div>
-                                    <div class="d-flex flex-column mt-auto">
-                                        <div class="d-flex flex-column">
-                                            <?php 
-                                            $current_price = get_current_price($product);
-                                            $has_discount = $current_price < $product['price'];
-                                            ?>
+
+                                    <!-- Giá -->
+                                    <div class="d-flex flex-column mt-auto mb-3">
+                                        <?php
+                                        $current_price = get_current_price($product);
+                                        $has_discount = $current_price < $product['price'];
+                                        ?>
+                                        <div class="d-flex align-items-center">
+                                            <p class="text-danger fw-bold mb-0">
+                                                <?php echo number_format($current_price, 0, ',', '.'); ?>₫
+                                            </p>
                                             <?php if ($has_discount): ?>
-                                                <p class="mb-0">
-                                                    <del class="text-muted"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</del>
+                                                <p class="text-muted mb-0 ms-2">
+                                                    <del><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</del>
                                                 </p>
-                                                <p class="text-danger fw-bold"><?php echo number_format($current_price, 0, ',', '.'); ?>₫</p>
-                                            <?php else: ?>
-                                                <p class="text-danger fw-bold"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</p>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="d-flex flex-column align-items-center">
-                                            <a href="product.php?slug=<?php echo $product['slug']; ?>" class="btn btn-primary w-100 mb-2">Chi Tiết</a>
-                                            <?php if ($product['stock'] > 0): ?>
-                                                <button class="btn btn-success add-to-cart w-100" data-product-id="<?php echo $product['id']; ?>">
-                                                    <i class="fas fa-cart-plus"></i> Thêm vào giỏ
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-secondary w-100" disabled>Hết hàng</button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
+
+                                    <!-- Icon Chi tiết và Thêm vào giỏ -->
+                                    <div class="d-flex justify-content-between">
+                                        <a href="product.php?slug=<?php echo $product['slug']; ?>"
+                                            class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center shadow"
+                                            style="width: 44px; height: 44px;" title="Chi tiết">
+                                            <i class="fas fa-info"></i>
+                                        </a>
+
+                                        <?php if ($product['stock'] > 0): ?>
+                                            <button
+                                                class="btn rounded-circle d-flex align-items-center justify-content-center shadow add-to-cart"
+                                                style="width: 44px; height: 44px; background-color: #dc3545;"
+                                                data-product-id="<?php echo $product['id']; ?>" title="Thêm vào giỏ">
+                                                <i class="fas fa-cart-plus" style="color: #fff;"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button
+                                                class="btn btn-secondary rounded-circle d-flex align-items-center justify-content-center shadow"
+                                                style="width: 44px; height: 44px;" disabled title="Hết hàng">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
+
+                                <!-- Badge -->
                                 <?php if ($product['is_new']): ?>
                                     <div class="position-absolute top-0 end-0 p-2">
                                         <span class="badge bg-success">Mới</span>
@@ -150,11 +178,12 @@ if (isset($_SESSION['success_message'])) {
                                 <?php endif; ?>
                                 <?php if ($has_discount): ?>
                                     <div class="position-absolute top-0 start-0 p-2">
-                                        <span class="badge bg-danger">Giảm giá</span>
+                                        <span class="badge bg-danger">Giảm <?php echo get_discounted_price($product) ?>%</span>
                                     </div>
                                 <?php endif; ?>
                             </div>
                         </div>
+
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -171,4 +200,5 @@ if (isset($_SESSION['success_message'])) {
     <!-- Search Autocomplete JS -->
     <script src="assets/js/search-autocomplete.js"></script>
 </body>
-</html> 
+
+</html>

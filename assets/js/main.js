@@ -23,10 +23,9 @@ function addToCart(productId, quantity = 1, buttonEl = null) {
             }
             if (data.success) {
                 // Update cart count
-                const cartCountEl = document.querySelector('.cart-count');
-                if (cartCountEl) {
-                    cartCountEl.textContent = data.cartCount || '0';
-                }
+                document.querySelectorAll('.cart-count').forEach(el => {
+                    el.textContent = data.cartCount || '0';
+                });
                 animateAddToCart(buttonEl);
                 showToast("🛒 Đã thêm vào giỏ hàng!", "success");
             } else {

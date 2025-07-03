@@ -89,45 +89,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } elseif ($action == 'delete') {
         $category_id = $_POST['category_id'] ?? null;
-        $is_parent = isset($_POST['is_parent']) ? true : false;
-        
+        $is_parent = isset($_POST['is_parent']) && $_POST['is_parent'] == '1';
+
         if ($category_id) {
             if ($is_parent) {
-                // Check if parent category has child categories
-                $stmt = $conn->prepare("SELECT COUNT(*) as count FROM child_categories WHERE parent_id = ?");
-                $stmt->bind_param("i", $category_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $child_count = $result->fetch_assoc()['count'];
-                
-                if ($child_count > 0) {
-                    $error = 'Không thể xóa danh mục cha vì có danh mục con';
-                } else {
-                    $stmt = $conn->prepare("DELETE FROM parent_categories WHERE id = ?");
-                    $stmt->bind_param("i", $category_id);
-                }
+            // Kiểm tra danh mục cha có danh mục con không
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM child_categories WHERE parent_id = ?");
+            $stmt->bind_param("i", $category_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $child_count = $result->fetch_assoc()['count'] ?? 0;
+
+            if ($child_count > 0) {
+                $error = 'Không thể xóa danh mục cha vì có danh mục con';
             } else {
-                // Check if child category has products
-                $stmt = $conn->prepare("SELECT COUNT(*) as count FROM products WHERE category_id = ?");
+                $stmt = $conn->prepare("DELETE FROM parent_categories WHERE id = ?");
                 $stmt->bind_param("i", $category_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $product_count = $result->fetch_assoc()['count'];
-                
-                if ($product_count > 0) {
-                    $error = 'Không thể xóa danh mục con vì có sản phẩm liên kết';
+                if ($stmt->execute()) {
+                $message = 'Xóa danh mục thành công';
                 } else {
-                    $stmt = $conn->prepare("DELETE FROM child_categories WHERE id = ?");
-                    $stmt->bind_param("i", $category_id);
+                $error = 'Lỗi: ' . $stmt->error;
                 }
             }
-            
-            if (!$error && isset($stmt)) {
+            } else {
+            // Kiểm tra danh mục con có sản phẩm không
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM products WHERE category_id = ?");
+            $stmt->bind_param("i", $category_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $product_count = $result->fetch_assoc()['count'] ?? 0;
+
+            if ($product_count > 0) {
+                $error = 'Không thể xóa danh mục con vì có sản phẩm liên kết';
+            } else {
+                $stmt = $conn->prepare("DELETE FROM child_categories WHERE id = ?");
+                $stmt->bind_param("i", $category_id);
                 if ($stmt->execute()) {
-                    $message = 'Xóa danh mục thành công';
+                $message = 'Xóa danh mục thành công';
                 } else {
-                    $error = 'Lỗi: ' . $stmt->error;
+                $error = 'Lỗi: ' . $stmt->error;
                 }
+            }
             }
         }
     }

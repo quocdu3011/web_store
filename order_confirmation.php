@@ -38,6 +38,7 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,6 +47,7 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
     <?php include 'includes/header.php'; ?>
     <?php include 'includes/navigation.php'; ?>
@@ -58,20 +60,28 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                         <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
                         <h2 class="my-4">Cảm Ơn Bạn Đã Đặt Hàng!</h2>
                         <p class="lead mb-4">Đơn hàng #<?php echo $order_id; ?> của bạn đã được đặt thành công.</p>
-                        
+
                         <div class="alert alert-info">
                             <p class="mb-0">
                                 <?php if ($order['payment_method'] == 'bank_transfer'): ?>
                                     Vui lòng hoàn tất thanh toán bằng thông tin ngân hàng dưới đây:
                                     <br><br>
-                                    Ngân hàng: Example Bank<br>
-                                    Tên tài khoản: Tech Store<br>
-                                    Số tài khoản: 1234567890<br>
-                                    Nội dung chuyển khoản: Đơn hàng #<?php echo $order_id; ?>
+                                    Ngân hàng: MB Bank<br>
+                                    Tên tài khoản: Trinh Quoc Du<br>
+                                    Số tài khoản: 1890130112004<br>
+                                    Nội dung chuyển khoản: donhang<?php echo $order_id; ?>
                                 <?php else: ?>
                                     Đơn hàng sẽ được giao đến địa chỉ đã cung cấp. Thanh toán khi nhận hàng.
                                 <?php endif; ?>
                             </p>
+                            <?php if ($order['payment_method'] == 'bank_transfer'): ?>
+                                <div class="my-3">
+                                    <strong>Quét mã QR để chuyển khoản nhanh:</strong><br>
+                                    <img width="250"
+                                        src="https://api.vietqr.io/image/970422-1890130112004-LHneKqI.jpg?accountName=TRINH%20QUOC%20DU&amount=<?php echo (int) $order['total']; ?>&addInfo=donhang<?php echo $order_id; ?>"
+                                        alt="Mã QR VietQR">
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="order-details mt-4">
@@ -84,7 +94,8 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                     </tr>
                                     <tr>
                                         <td class="text-start">Ngày đặt:</td>
-                                        <td class="text-end"><?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
+                                        <td class="text-end">
+                                            <?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
                                     </tr>
                                     <tr>
                                         <td class="text-start">Tổng tiền:</td>
@@ -92,12 +103,12 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                     </tr>
                                     <tr>
                                         <td class="text-start">Phương thức thanh toán:</td>
-                                        <td class="text-end"><?php 
-                                            $payment_methods = [
-                                                'bank_transfer' => 'Chuyển khoản ngân hàng',
-                                                'cod' => 'Thanh toán khi nhận hàng'
-                                            ];
-                                            echo $payment_methods[$order['payment_method']] ?? ucwords(str_replace('_', ' ', $order['payment_method']));
+                                        <td class="text-end"><?php
+                                        $payment_methods = [
+                                            'bank_transfer' => 'Chuyển khoản ngân hàng',
+                                            'cod' => 'Thanh toán khi nhận hàng'
+                                        ];
+                                        echo $payment_methods[$order['payment_method']] ?? ucwords(str_replace('_', ' ', $order['payment_method']));
                                         ?></td>
                                     </tr>
                                 </tbody>
@@ -110,17 +121,19 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                 <tbody>
                                     <tr>
                                         <td class="text-start">Địa chỉ:</td>
-                                        <td class="text-end"><?php echo nl2br(sanitize_output($order['shipping_address'])); ?></td>
+                                        <td class="text-end">
+                                            <?php echo nl2br(sanitize_output($order['shipping_address'])); ?></td>
                                     </tr>
                                     <tr>
                                         <td class="text-start">Số điện thoại:</td>
                                         <td class="text-end"><?php echo sanitize_output($order['phone_number']); ?></td>
                                     </tr>
                                     <?php if (!empty($order['delivery_notes'])): ?>
-                                    <tr>
-                                        <td class="text-start">Ghi chú giao hàng:</td>
-                                        <td class="text-end"><?php echo nl2br(sanitize_output($order['delivery_notes'])); ?></td>
-                                    </tr>
+                                        <tr>
+                                            <td class="text-start">Ghi chú giao hàng:</td>
+                                            <td class="text-end">
+                                                <?php echo nl2br(sanitize_output($order['delivery_notes'])); ?></td>
+                                        </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -135,10 +148,25 @@ $order_items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             </div>
         </div>
     </div>
+    <script>
+        <?php if ($order['payment_status'] !== 'paid' && $order['payment_method'] === 'bank_transfer'): ?>
+            setInterval(() => {
+                fetch("includes/check_payment_status.php?id=<?php echo $order_id; ?>")
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.paid) {
+                            window.location.href = "payment_success.php?id=<?php echo $order_id; ?>"; // chuyển đến trang chi tiết đơn hàng
+                        }
+                    });
+            }, 5000); // kiểm tra mỗi 5 giây
+        <?php endif; ?>
+    </script>
+
 
     <?php include 'includes/footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
-</html> 
+
+</html>

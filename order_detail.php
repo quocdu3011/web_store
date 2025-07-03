@@ -66,8 +66,19 @@ if (!$order) {
     </div>
     </div>
     <div class="row mb-2">
-      <div class="col-md-4 order-label">Phương thức thanh toán:</div>
-      <div class="col-md-8"><?php echo strtoupper($order['payment_method'] ?? 'COD'); ?></div>
+    <div class="col-md-4 order-label">Phương thức thanh toán:</div>
+    <div class="col-md-8">
+      <?php
+        $method = $order['payment_method'] ?? 'COD';
+        if ($method === 'bank_transfer') {
+          echo 'Chuyển khoản ngân hàng';
+        } elseif ($method === 'COD') {
+          echo 'Thanh toán khi nhận hàng';
+        } else {
+          echo htmlspecialchars(strtoupper($method));
+        }
+      ?>
+    </div>
     </div>
     <div class="row mb-2">
       <div class="col-md-4 order-label">Trạng thái thanh toán:</div>

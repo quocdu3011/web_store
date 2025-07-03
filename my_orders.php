@@ -111,7 +111,17 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
           <!-- Thông tin thanh toán -->
           <div class="mt-3">
-            <div>Phương thức thanh toán: <strong><?php echo strtoupper($order['payment_method'] ?? 'COD'); ?></strong></div>
+            <?php
+            $payment_method = $order['payment_method'] ?? 'COD';
+            if ($payment_method === 'bank_transfer') {
+                $payment_text = 'Chuyển khoản ngân hàng';
+            } elseif ($payment_method === 'COD') {
+                $payment_text = 'Thanh toán khi nhận hàng';
+            } else {
+                $payment_text = strtoupper($payment_method);
+            }
+            ?>
+            <div>Phương thức thanh toán: <strong><?php echo $payment_text; ?></strong></div>
             <div class="text-end mt-2">
               <strong>Tổng cộng: </strong>
               <span class="text-danger fw-bold fs-5"><?php echo number_format($order['total'], 0, ',', '.'); ?>₫</span>

@@ -3,209 +3,185 @@ session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    $_SESSION['error'] = 'Please login to continue with checkout';
+    $_SESSION['error'] = 'Vui lòng đăng nhập để thanh toán';
     header('Location: login.php');
     exit;
 }
 
-// Check if cart is empty
-if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
+if (!isset($_GET['products']) || empty($_GET['products'])) {
     header('Location: cart.php');
     exit;
 }
 
-// Get cart items
+$product_ids = explode(',', $_GET['products']);
 $cart_items = [];
 $subtotal = 0;
 $shipping_fee_setting = get_setting('shipping_fee');
 $shipping_cost = is_numeric($shipping_fee_setting) ? floatval($shipping_fee_setting) : 30000;
 
-foreach ($_SESSION['cart'] as $product_id => $quantity) {
-    $product = get_product($product_id);
-    if ($product) {
-        $product['quantity'] = $quantity;
-        $product['subtotal'] = $product['price'] * $quantity;
-        $cart_items[] = $product;
-        $subtotal += $product['subtotal'];
+foreach ($product_ids as $product_id) {
+    $product_id = intval($product_id);
+    if (isset($_SESSION['cart'][$product_id])) {
+        $product = get_product($product_id);
+        if ($product) {
+            $product['quantity'] = $_SESSION['cart'][$product_id];
+            $product['price_display'] = get_current_price($product);
+            $product['subtotal'] = $product['price_display'] * $product['quantity'];
+            $cart_items[] = $product;
+            $subtotal += $product['subtotal'];
+        }
     }
 }
-
 $total = $subtotal + $shipping_cost;
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $shipping_address = $_POST['shipping_address'] ?? '';
     $payment_method = $_POST['payment_method'] ?? '';
     $phone_number = $_POST['phone_number'] ?? '';
-    
+
     if (empty($shipping_address) || empty($payment_method) || empty($phone_number)) {
-        $_SESSION['error'] = 'Please fill in all required fields';
+        $_SESSION['error'] = 'Vui lòng điền đầy đủ thông tin';
     } else {
-        // Begin transaction
         $conn->begin_transaction();
-        
+
         try {
-            // Create order
-            $stmt = $conn->prepare("INSERT INTO orders (user_id, subtotal, shipping_cost, total, shipping_address, phone_number, payment_method, payment_status) 
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')");
+            $stmt = $conn->prepare("INSERT INTO orders (user_id, subtotal, shipping_cost, total, shipping_address, phone_number, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')");
             $stmt->bind_param("idddsss", $_SESSION['user_id'], $subtotal, $shipping_cost, $total, $shipping_address, $phone_number, $payment_method);
             $stmt->execute();
             $order_id = $conn->insert_id;
-            
-            // Add order items
+
             $stmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
             foreach ($cart_items as $item) {
-                $stmt->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price']);
+                $stmt->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price_display']);
                 $stmt->execute();
-                
-                // Update product stock
                 $new_stock = $item['stock'] - $item['quantity'];
                 $update_stock = $conn->prepare("UPDATE products SET stock = ? WHERE id = ?");
                 $update_stock->bind_param("ii", $new_stock, $item['id']);
                 $update_stock->execute();
+
+                unset($_SESSION['cart'][$item['id']]);
             }
-            
-            // Clear cart
-            unset($_SESSION['cart']);
-            
-            // Commit transaction
+
             $conn->commit();
-            
-            // Redirect to order confirmation
             header("Location: order_confirmation.php?id=" . $order_id);
             exit;
-            
         } catch (Exception $e) {
-            // Rollback transaction on error
             $conn->rollback();
-            $_SESSION['error'] = 'Failed to process order: ' . $e->getMessage();
+            $_SESSION['error'] = 'Đã xảy ra lỗi khi xử lý đơn hàng: ' . $e->getMessage();
         }
     }
 }
 
-// Get user information
 $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Tech Store</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xác Nhận Thanh Toán</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .checkout-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .checkout-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    .form-control:focus {
+      box-shadow: none;
+      border-color: #dc3545;
+    }
+    .btn-submit {
+      background-color: #dc3545;
+      border: none;
+      padding: 10px 30px;
+    }
+    .btn-submit:hover {
+      background-color: #bb2d3b;
+    }
+  </style>
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
-    <?php include 'includes/navigation.php'; ?>
-
-    <div class="container my-4">
-        <h2 class="mb-4">Checkout</h2>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger">
-                <?php 
-                echo $_SESSION['error'];
-                unset($_SESSION['error']);
-                ?>
+<?php include 'includes/header.php'; ?>
+<?php include 'includes/navigation.php'; ?>
+<div class="container my-5">
+  <h2 class="mb-4">Thông Tin Thanh Toán</h2>
+  <?php if (isset($_SESSION['error'])): ?>
+    <div class="alert alert-danger"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+  <?php endif; ?>
+  <div class="row">
+    <div class="col-md-7">
+      <div class="card checkout-card p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Họ tên</label>
+            <input type="text" class="form-control" value="<?php echo sanitize_output($user['full_name']); ?>" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" value="<?php echo sanitize_output($user['email']); ?>" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Số điện thoại *</label>
+            <input type="text" name="phone_number" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Địa chỉ nhận hàng *</label>
+            <textarea name="shipping_address" rows="3" class="form-control" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phương thức thanh toán *</label><br>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" required>
+              <label class="form-check-label" for="cod">Thanh toán khi nhận hàng</label>
             </div>
-        <?php endif; ?>
-
-        <div class="row">
-            <!-- Checkout Form -->
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <form method="POST" action="">
-                            <h5 class="card-title mb-4">Shipping Information</h5>
-                            
-                            <div class="mb-3">
-                                <label for="full_name" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="full_name" value="<?php echo sanitize_output($user['full_name']); ?>" readonly>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" value="<?php echo sanitize_output($user['email']); ?>" readonly>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="phone_number" class="form-label">Số Điện Thoại*</label>
-                                <input type="text" class="form-control" id="phone_number" name="phone_number" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="shipping_address" class="form-label">Shipping Address*</label>
-                                <textarea class="form-control" id="shipping_address" name="shipping_address" rows="3" required></textarea>
-                            </div>
-
-                            <h5 class="card-title mb-4 mt-5">Payment Method</h5>
-                            
-                            <div class="mb-3">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" required>
-                                    <label class="form-check-label" for="cod">
-                                        Cash on Delivery
-                                    </label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
-                                    <label class="form-check-label" for="bank_transfer">
-                                        Bank Transfer
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">Place Order</button>
-                        </form>
-                    </div>
-                </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="payment_method" id="bank" value="bank_transfer">
+              <label class="form-check-label" for="bank">Chuyển khoản ngân hàng</label>
             </div>
-
-            <!-- Order Summary -->
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Order Summary</h5>
-                    </div>
-                    <div class="card-body">
-                        <?php foreach ($cart_items as $item): ?>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span><?php echo sanitize_output($item['name']); ?> × <?php echo $item['quantity']; ?></span>
-                                <span><?php echo format_price($item['subtotal']); ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                        
-                        <hr>
-                        
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <span><?php echo format_price($subtotal); ?></span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Shipping</span>
-                            <span><?php echo format_price($shipping_cost); ?></span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-2">
-                            <strong>Total</strong>
-                            <strong><?php echo format_price($total); ?></strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+          </div>
+          <button type="submit" class="btn btn-submit">Đặt hàng</button>
+        </form>
+      </div>
     </div>
-
-    <?php include 'includes/footer.php'; ?>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/main.js"></script>
+    <div class="col-md-5">
+      <div class="card checkout-card p-4">
+        <h5 class="checkout-title mb-3">Tóm Tắt Đơn Hàng</h5>
+        <?php foreach ($cart_items as $item): ?>
+          <div class="d-flex justify-content-between mb-2">
+            <span><?php echo sanitize_output($item['name']); ?> × <?php echo $item['quantity']; ?></span>
+            <span><?php echo format_price($item['subtotal']); ?></span>
+          </div>
+        <?php endforeach; ?>
+        <hr>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Tạm tính</span>
+          <span><?php echo format_price($subtotal); ?></span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Phí vận chuyển</span>
+          <span><?php echo format_price($shipping_cost); ?></span>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between fw-bold">
+          <span>Tổng cộng</span>
+          <span><?php echo format_price($total); ?></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<?php include 'includes/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/main.js"></script>
 </body>
-</html> 
+</html>

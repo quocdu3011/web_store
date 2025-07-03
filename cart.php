@@ -38,18 +38,20 @@ $total = $subtotal + $shipping_cost;
             -webkit-appearance: none;
             height: 15px;
             width: 15px;
-            background-color:rgb(213, 213, 213);
+            background-color: rgb(213, 213, 213);
             border-radius: 1px;
             cursor: pointer;
             display: flex;
             outline: none;
         }
+
         .form-check-label {
             color: #4c4c4c;
             font-size: 14px;
             font-family: "Poppins", sans-serif;
             cursor: pointer;
         }
+
         input[type="checkbox"]:after {
             font-family: "Font Awesome 6 Free";
             content: "\f00c";
@@ -58,17 +60,31 @@ $total = $subtotal + $shipping_cost;
             color: #fff;
             display: none;
         }
-        .product-checkbox{
+
+        .product-checkbox {
             margin-left: 10px;
         }
+
         input[type="checkbox"]:hover {
             background-color: #a5a5a5;
         }
+
         input[type="checkbox"]:checked {
             background-color: #0083e8;
         }
-        
 
+        .cart-item {
+            border-radius: 0.5rem;
+        }
+
+        #order-summary {
+            border-radius: 0.5rem;
+        }
+
+        #order-summary .card-header {
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
     </style>
 </head>
 
@@ -97,7 +113,8 @@ $total = $subtotal + $shipping_cost;
                     <!-- Cart Items -->
                     <div class="col-md-8">
                         <?php foreach ($cart_items as $item): ?>
-                            <div class="card mb-3 cart-item" data-product-id="<?php echo $item['id']; ?>">
+                            <div class="card mb-3 cart-item shadow-sm border border-success rounded"
+                                data-product-id="<?php echo $item['id']; ?>">
                                 <div class="row g-0">
                                     <div class="col-md-3 d-flex align-items-center">
                                         <!-- Ô checkbox -->
@@ -149,8 +166,9 @@ $total = $subtotal + $shipping_cost;
 
                     <!-- Order Summary -->
                     <div class="col-md-4">
-                        <div class="card sticky-top" style="top: 1px;" id="order-summary">
-                            <div class="card-header">
+                        <div class="card sticky-top shadow-sm border border-success rounded" style="top: 1px;"
+                            id="order-summary">
+                            <div class="card-header bg-success text-white rounded-top">
                                 <h5 class="card-title mb-0">Tóm Tắt Đơn Hàng</h5>
                             </div>
                             <div class="card-body">
@@ -170,7 +188,7 @@ $total = $subtotal + $shipping_cost;
                                     <strong
                                         class="cart-total"><?php echo number_format($total, 0, ',', '.') . '₫'; ?></strong>
                                 </div>
-                                <button class="btn btn-primary w-100" onclick="window.location.href='checkout.php'">
+                                <button class="btn btn-success w-100" onclick="window.location.href='checkout.php'">
                                     Tiến hành đặt hàng
                                 </button>
                             </div>

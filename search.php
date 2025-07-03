@@ -49,47 +49,75 @@ $products = search_products($query, 24); // Show up to 24 results
                     
                     <div class="row" id="products-grid">
                         <?php foreach ($products as $product): ?>
-                            <div class="col-md-3 mb-4">
-                                <div class="card h-100">
-                                    <img src="uploads/<?php echo $product['image']; ?>" class="card-img-top" alt="<?php echo $product['name']; ?>">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><?php echo $product['name']; ?></h5>
-                                        <p class="card-text text-truncate"><?php echo $product['description']; ?></p>
-                                        <?php 
+                            <div class="col-md-4 mb-4">
+                            <div class="card h-100 d-flex flex-column">
+                                <img src="<?php echo filter_var($product['image'], FILTER_VALIDATE_URL) ? $product['image'] : 'uploads/' . $product['image']; ?>"
+                                    class="card-img-top" alt="<?php echo $product['name']; ?>">
+                                <div class="card-body d-flex flex-column flex-grow-1">
+                                    <h5 class="card-title"><?php echo $product['name']; ?></h5>
+                                    <p class="card-text text-truncate"><?php echo $product['description']; ?></p>
+
+                                    <div class="ratingresult mb-2">
+                                        <?php echo get_rating_stars($product['rating'], $product['rating_count']); ?>
+                                        <span class="text-muted">(<?php echo $product['rating_count']; ?> đánh giá)</span>
+                                    </div>
+
+                                    <!-- Giá -->
+                                    <div class="d-flex flex-column mt-auto mb-3">
+                                        <?php
                                         $current_price = get_current_price($product);
                                         $has_discount = $current_price < $product['price'];
                                         ?>
-                                        <?php if ($has_discount): ?>
-                                            <p class="mb-0">
-                                                <del class="text-muted"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</del>
+                                        <div class="d-flex align-items-center">
+                                            <p class="text-danger fw-bold mb-0">
+                                                <?php echo number_format($current_price, 0, ',', '.'); ?>₫
                                             </p>
-                                            <p class="text-danger fw-bold"><?php echo number_format($current_price, 0, ',', '.'); ?>₫</p>
-                                        <?php else: ?>
-                                            <p class="text-danger fw-bold"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</p>
-                                        <?php endif; ?>
-                                        <div class="d-flex flex-column align-items-center">
-                                            <a href="product.php?slug=<?php echo $product['slug']; ?>" class="btn btn-primary w-100 mb-2">Chi Tiết</a>
-                                            <?php if ($product['stock'] > 0): ?>
-                                                <button class="btn btn-success add-to-cart w-100" data-product-id="<?php echo $product['id']; ?>">
-                                                    <i class="fas fa-cart-plus"></i> Thêm vào giỏ
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-secondary w-100" disabled>Hết hàng</button>
+                                            <?php if ($has_discount): ?>
+                                                <p class="text-muted mb-0 ms-2">
+                                                    <del><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</del>
+                                                </p>
                                             <?php endif; ?>
                                         </div>
                                     </div>
-                                    <?php if ($product['is_new']): ?>
-                                        <div class="position-absolute top-0 end-0 p-2">
-                                            <span class="badge bg-success">Mới</span>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($has_discount): ?>
-                                        <div class="position-absolute top-0 start-0 p-2">
-                                            <span class="badge bg-danger">Giảm giá</span>
-                                        </div>
-                                    <?php endif; ?>
+
+                                    <!-- Icon Chi tiết và Thêm vào giỏ -->
+                                    <div class="d-flex justify-content-between">
+                                        <a href="product.php?slug=<?php echo $product['slug']; ?>"
+                                            class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center shadow"
+                                            style="width: 44px; height: 44px;" title="Chi tiết">
+                                            <i class="fas fa-info"></i>
+                                        </a>
+
+                                        <?php if ($product['stock'] > 0): ?>
+                                            <button
+                                                class="btn rounded-circle d-flex align-items-center justify-content-center shadow add-to-cart"
+                                                style="width: 44px; height: 44px; background-color: #dc3545;"
+                                                data-product-id="<?php echo $product['id']; ?>" title="Thêm vào giỏ">
+                                                <i class="fas fa-cart-plus" style="color: #fff;"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button
+                                                class="btn btn-secondary rounded-circle d-flex align-items-center justify-content-center shadow"
+                                                style="width: 44px; height: 44px;" disabled title="Hết hàng">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
+
+                                <!-- Badge -->
+                                <?php if ($product['is_new']): ?>
+                                    <div class="position-absolute top-0 end-0 p-2">
+                                        <span class="badge bg-success">Mới</span>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($has_discount): ?>
+                                    <div class="position-absolute top-0 start-0 p-2">
+                                        <span class="badge bg-danger">Giảm <?php echo get_discounted_price($product) ?>%</span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
+                        </div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>

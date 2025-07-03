@@ -3,301 +3,159 @@ session_start();
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
-// Check if user is admin
 if (!is_admin()) {
     header('Location: ../login.php');
     exit;
 }
 
-// Handle form submission
+// Handle updates and deletions
 $message = '';
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    
-    if ($action == 'update_role') {
-        $user_id = $_POST['user_id'] ?? null;
-        $is_admin = isset($_POST['is_admin']) ? 1 : 0;
-        
-        // Prevent locking yourself out
-        if ($user_id == $_SESSION['user_id'] && $is_admin == 0) {
-            $error = 'Không thể gỡ quyền quản trị của chính mình';
+    $user_id = $_POST['user_id'] ?? null;
+
+    if ($action === 'update_role') {
+        $role = $_POST['role'] ?? 'customer';
+
+        if ($user_id == $_SESSION['user_id'] && $role !== 'admin') {
+            $error = 'Bạn không thể gỡ quyền quản trị của chính mình.';
         } else {
-            $stmt = $conn->prepare("UPDATE users SET is_admin = ? WHERE id = ?");
-            $stmt->bind_param("ii", $is_admin, $user_id);
-            
-            if ($stmt->execute()) {
-                $message = 'Cập nhật quyền người dùng thành công';
-            } else {
-                $error = 'Lỗi: ' . $stmt->error;
-            }
+            $stmt = $conn->prepare("UPDATE users SET role = ? WHERE id = ?");
+            $stmt->bind_param("si", $role, $user_id);
+            $stmt->execute() ? $message = 'Cập nhật vai trò thành công.' : $error = $stmt->error;
         }
-    } elseif ($action == 'delete') {
-        $user_id = $_POST['user_id'] ?? null;
-        
-        // Prevent deleting yourself
+    } elseif ($action === 'delete') {
         if ($user_id == $_SESSION['user_id']) {
-            $error = 'Không thể xóa tài khoản của chính mình';
+            $error = 'Bạn không thể tự xóa tài khoản của mình.';
         } else {
             $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
             $stmt->bind_param("i", $user_id);
-            
-            if ($stmt->execute()) {
-                $message = 'Xóa người dùng thành công';
-            } else {
-                $error = 'Lỗi: ' . $stmt->error;
-            }
+            $stmt->execute() ? $message = 'Xóa người dùng thành công.' : $error = $stmt->error;
         }
     }
 }
 
-// Get users with filter
-$search_query = isset($_GET['search']) ? $_GET['search'] : '';
-$role_filter = isset($_GET['role']) ? $_GET['role'] : '';
+$role_filter = $_GET['role'] ?? '';
+$search = $_GET['search'] ?? '';
 
-$sql = "SELECT * FROM users";
+$sql = "SELECT id, username, full_name, email, role, created_at FROM users WHERE 1";
 $params = [];
-$param_types = "";
+$types = '';
 
-// Add filters
-$where_clauses = [];
-
-if (!empty($role_filter)) {
-    if ($role_filter == 'admin') {
-        $where_clauses[] = "is_admin = 1";
-    } else {
-        $where_clauses[] = "is_admin = 0";
-    }
+if ($role_filter) {
+    $sql .= " AND role = ?";
+    $params[] = $role_filter;
+    $types .= 's';
 }
 
-if (!empty($search_query)) {
-    $search_query = "%$search_query%";
-    $where_clauses[] = "(username LIKE ? OR email LIKE ? OR full_name LIKE ?)";
-    $params[] = $search_query;
-    $params[] = $search_query;
-    $params[] = $search_query;
-    $param_types .= "sss";
-}
-
-if (!empty($where_clauses)) {
-    $sql .= " WHERE " . implode(" AND ", $where_clauses);
+if ($search) {
+    $sql .= " AND (username LIKE ? OR email LIKE ? OR full_name LIKE ?)";
+    $like = "%$search%";
+    array_push($params, $like, $like, $like);
+    $types .= 'sss';
 }
 
 $sql .= " ORDER BY created_at DESC";
-
 $stmt = $conn->prepare($sql);
-
 if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt->bind_param($types, ...$params);
 }
-
 $stmt->execute();
 $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Người Dùng - Quản Trị</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý người dùng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-    <?php include 'includes/admin_header.php'; ?>
+<?php include 'includes/admin_header.php'; ?>
+<div class="container-fluid">
+  <div class="row">
+    <?php include 'includes/admin_sidebar.php'; ?>
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+      <h2 class="mb-4">Danh sách người dùng</h2>
 
-    <div class="container-fluid">
-        <div class="row">
-            <?php include 'includes/admin_sidebar.php'; ?>
-            
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                    <h1>Quản Lý Người Dùng</h1>
-                </div>
+      <?php if ($message): ?><div class="alert alert-success"><?php echo $message; ?></div><?php endif; ?>
+      <?php if ($error): ?><div class="alert alert-danger"><?php echo $error; ?></div><?php endif; ?>
 
-                <?php if ($message): ?>
-                    <div class="alert alert-success"><?php echo sanitize_output($message); ?></div>
+      <form method="GET" class="row g-2 mb-3">
+        <div class="col-md-3">
+          <select class="form-select" name="role">
+            <option value="">Tất cả vai trò</option>
+            <option value="admin" <?= $role_filter === 'admin' ? 'selected' : '' ?>>Admin</option>
+            <option value="staff" <?= $role_filter === 'staff' ? 'selected' : '' ?>>Nhân viên</option>
+            <option value="customer" <?= $role_filter === 'customer' ? 'selected' : '' ?>>Khách hàng</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <input type="text" class="form-control" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Tìm theo tên, email...">
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">Lọc</button>
+        </div>
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Tên đăng nhập</th>
+              <th>Họ tên</th>
+              <th>Email</th>
+              <th>Vai trò</th>
+              <th>Ngày tạo</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($users as $user): ?>
+            <tr>
+              <td><?= $user['id'] ?></td>
+              <td><?= htmlspecialchars($user['username']) ?></td>
+              <td><?= htmlspecialchars($user['full_name']) ?></td>
+              <td><?= htmlspecialchars($user['email']) ?></td>
+              <td>
+                <span class="badge bg-<?= $user['role'] === 'admin' ? 'primary' : ($user['role'] === 'staff' ? 'warning' : 'secondary') ?>">
+                  <?= ucfirst($user['role']) ?>
+                </span>
+              </td>
+              <td><?= date('d/m/Y', strtotime($user['created_at'])) ?></td>
+              <td>
+                <form method="POST" class="d-inline">
+                  <input type="hidden" name="action" value="update_role">
+                  <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                  <select name="role" class="form-select form-select-sm d-inline w-auto">
+                    <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
+                    <option value="staff" <?= $user['role'] === 'staff' ? 'selected' : '' ?>>Nhân viên</option>
+                    <option value="customer" <?= $user['role'] === 'customer' ? 'selected' : '' ?>>Khách</option>
+                  </select>
+                  <button class="btn btn-sm btn-success">Lưu</button>
+                </form>
+                <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                  <form method="POST" class="d-inline" onsubmit="return confirm('Xác nhận xóa người dùng này?');">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                    <button class="btn btn-sm btn-danger">Xóa</button>
+                  </form>
                 <?php endif; ?>
-
-                <?php if ($error): ?>
-                    <div class="alert alert-danger"><?php echo sanitize_output($error); ?></div>
-                <?php endif; ?>
-
-                <!-- Filter Form -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <form method="GET" class="row g-3">
-                            <div class="col-md-4">
-                                <label for="role" class="form-label">Vai Trò</label>
-                                <select class="form-select" id="role" name="role">
-                                    <option value="">Tất cả</option>
-                                    <option value="admin" <?php if ($role_filter == 'admin') echo 'selected'; ?>>Quản trị viên</option>
-                                    <option value="user" <?php if ($role_filter == 'user') echo 'selected'; ?>>Người dùng</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="search" class="form-label">Tìm Kiếm</label>
-                                <input type="text" class="form-control" id="search" name="search" value="<?php echo sanitize_output($search_query); ?>" placeholder="Tên người dùng, email...">
-                            </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary w-100">Lọc</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Users Table -->
-                <div class="card">
-                    <div class="card-body">
-                        <?php if (empty($users)): ?>
-                            <div class="alert alert-info">Không có người dùng nào khớp với điều kiện tìm kiếm.</div>
-                        <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Tên Người Dùng</th>
-                                            <th>Email</th>
-                                            <th>Họ Tên</th>
-                                            <th>Ngày Đăng Ký</th>
-                                            <th>Vai Trò</th>
-                                            <th>Thao Tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($users as $user): ?>
-                                            <tr>
-                                                <td><?php echo $user['id']; ?></td>
-                                                <td><?php echo sanitize_output($user['username']); ?></td>
-                                                <td><?php echo sanitize_output($user['email']); ?></td>
-                                                <td><?php echo sanitize_output($user['full_name'] ?? ''); ?></td>
-                                                <td><?php echo date('d/m/Y', strtotime($user['created_at'])); ?></td>
-                                                <td>
-                                                    <span class="badge bg-<?php echo $user['is_admin'] ? 'primary' : 'secondary'; ?>">
-                                                        <?php echo $user['is_admin'] ? 'Quản trị viên' : 'Người dùng'; ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-info edit-user" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#editUserModal"
-                                                            data-user-id="<?php echo $user['id']; ?>"
-                                                            data-username="<?php echo sanitize_output($user['username']); ?>"
-                                                            data-is-admin="<?php echo $user['is_admin']; ?>">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                                        <button class="btn btn-sm btn-danger delete-user"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#deleteUserModal"
-                                                                data-user-id="<?php echo $user['id']; ?>"
-                                                                data-username="<?php echo sanitize_output($user['username']); ?>">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <!-- Edit User Modal -->
-    <div class="modal fade" id="editUserModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Cập Nhật Người Dùng</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editUserForm" method="POST">
-                        <input type="hidden" name="action" value="update_role">
-                        <input type="hidden" name="user_id" id="edit-user-id">
-
-                        <div class="mb-3">
-                            <label class="form-label">Tên Người Dùng</label>
-                            <input type="text" class="form-control" id="edit-username" disabled>
-                        </div>
-
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="is-admin" name="is_admin">
-                            <label class="form-check-label" for="is-admin">Quản trị viên</label>
-                        </div>
-
-                        <div class="text-end">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-primary">Cập Nhật</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delete User Modal -->
-    <div class="modal fade" id="deleteUserModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Xác Nhận Xóa</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Bạn có chắc chắn muốn xóa người dùng này?</p>
-                    <p class="fw-bold" id="delete-username"></p>
-                    <p class="text-danger">Thao tác này không thể hoàn tác!</p>
-                </div>
-                <div class="modal-footer">
-                    <form method="POST">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="user_id" id="delete-user-id">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-danger">Xóa</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Edit user role
-            const editButtons = document.querySelectorAll('.edit-user');
-            const editUserId = document.getElementById('edit-user-id');
-            const editUsername = document.getElementById('edit-username');
-            const isAdmin = document.getElementById('is-admin');
-            
-            editButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    editUserId.value = this.dataset.userId;
-                    editUsername.value = this.dataset.username;
-                    isAdmin.checked = this.dataset.isAdmin === '1';
-                });
-            });
-            
-            // Delete user
-            const deleteButtons = document.querySelectorAll('.delete-user');
-            const deleteUserId = document.getElementById('delete-user-id');
-            const deleteUsername = document.getElementById('delete-username');
-            
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    deleteUserId.value = this.dataset.userId;
-                    deleteUsername.textContent = this.dataset.username;
-                });
-            });
-        });
-    </script>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>

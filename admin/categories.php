@@ -15,21 +15,21 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? '';
-    
+
     if ($action == 'add' || $action == 'edit') {
         $category_id = $_POST['category_id'] ?? null;
         $name = $_POST['name'] ?? '';
         $description = $_POST['description'] ?? '';
         $is_parent = (isset($_POST['is_parent']) && $_POST['is_parent'] == '1') ? true : false;
         $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
-        
+
         if (empty($name)) {
             $error = 'Tên danh mục là bắt buộc';
         } elseif (!$is_parent && empty($parent_id)) {
             $error = 'Danh mục con phải có danh mục cha';
         } else {
             $slug = strtolower(str_replace(' ', '-', $name));
-            
+
             // Handle image upload
             $image = null;
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $error = 'Không thể tải lên hình ảnh';
                 }
             }
-            
+
             if (!$error) {
                 if ($action == 'add') {
                     if ($is_parent) {
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $sql .= ", image = ?";
                         }
                         $sql .= " WHERE id = ?";
-                        
+
                         if ($image) {
                             $stmt = $conn->prepare($sql);
                             $stmt->bind_param("ssssi", $name, $slug, $description, $image, $category_id);
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $sql .= ", image = ?";
                         }
                         $sql .= " WHERE id = ?";
-                        
+
                         if ($image) {
                             $stmt = $conn->prepare($sql);
                             $stmt->bind_param("sssisi", $name, $slug, $description, $parent_id, $image, $category_id);
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                     }
                 }
-                
+
                 if ($stmt->execute()) {
                     $message = $action == 'add' ? 'Thêm danh mục thành công' : 'Cập nhật danh mục thành công';
                 } else {
@@ -93,43 +93,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if ($category_id) {
             if ($is_parent) {
-            // Kiểm tra danh mục cha có danh mục con không
-            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM child_categories WHERE parent_id = ?");
-            $stmt->bind_param("i", $category_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $child_count = $result->fetch_assoc()['count'] ?? 0;
-
-            if ($child_count > 0) {
-                $error = 'Không thể xóa danh mục cha vì có danh mục con';
-            } else {
-                $stmt = $conn->prepare("DELETE FROM parent_categories WHERE id = ?");
+                // Kiểm tra danh mục cha có danh mục con không
+                $stmt = $conn->prepare("SELECT COUNT(*) as count FROM child_categories WHERE parent_id = ?");
                 $stmt->bind_param("i", $category_id);
-                if ($stmt->execute()) {
-                $message = 'Xóa danh mục thành công';
-                } else {
-                $error = 'Lỗi: ' . $stmt->error;
-                }
-            }
-            } else {
-            // Kiểm tra danh mục con có sản phẩm không
-            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM products WHERE category_id = ?");
-            $stmt->bind_param("i", $category_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $product_count = $result->fetch_assoc()['count'] ?? 0;
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $child_count = $result->fetch_assoc()['count'] ?? 0;
 
-            if ($product_count > 0) {
-                $error = 'Không thể xóa danh mục con vì có sản phẩm liên kết';
-            } else {
-                $stmt = $conn->prepare("DELETE FROM child_categories WHERE id = ?");
-                $stmt->bind_param("i", $category_id);
-                if ($stmt->execute()) {
-                $message = 'Xóa danh mục thành công';
+                if ($child_count > 0) {
+                    $error = 'Không thể xóa danh mục cha vì có danh mục con';
                 } else {
-                $error = 'Lỗi: ' . $stmt->error;
+                    $stmt = $conn->prepare("DELETE FROM parent_categories WHERE id = ?");
+                    $stmt->bind_param("i", $category_id);
+                    if ($stmt->execute()) {
+                        $message = 'Xóa danh mục thành công';
+                    } else {
+                        $error = 'Lỗi: ' . $stmt->error;
+                    }
                 }
-            }
+            } else {
+                // Kiểm tra danh mục con có sản phẩm không
+                $stmt = $conn->prepare("SELECT COUNT(*) as count FROM products WHERE category_id = ?");
+                $stmt->bind_param("i", $category_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $product_count = $result->fetch_assoc()['count'] ?? 0;
+
+                if ($product_count > 0) {
+                    $error = 'Không thể xóa danh mục con vì có sản phẩm liên kết';
+                } else {
+                    $stmt = $conn->prepare("DELETE FROM child_categories WHERE id = ?");
+                    $stmt->bind_param("i", $category_id);
+                    if ($stmt->execute()) {
+                        $message = 'Xóa danh mục thành công';
+                    } else {
+                        $error = 'Lỗi: ' . $stmt->error;
+                    }
+                }
             }
         }
     }
@@ -141,6 +141,7 @@ $child_categories = get_child_categories();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -149,21 +150,25 @@ $child_categories = get_child_categories();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
+
 <body>
     <?php include 'includes/admin_header.php'; ?>
 
     <div class="container-fluid">
         <div class="row">
             <?php include 'includes/admin_sidebar.php'; ?>
-            
+
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
                     <h1>Quản Lý Danh Mục</h1>
                     <div>
-                        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#categoryModal" data-category-type="parent">
+                        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#categoryModal"
+                            data-category-type="parent">
                             Thêm Danh Mục Cha
                         </button>
-                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal" data-category-type="child">
+                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal"
+                            data-category-type="child">
                             Thêm Danh Mục Con
                         </button>
                     </div>
@@ -209,9 +214,16 @@ $child_categories = get_child_categories();
                                             <td><?php echo $category['id']; ?></td>
                                             <td>
                                                 <?php if (!empty($category['image'])): ?>
-                                                    <img src="../<?php echo sanitize_output($category['image']); ?>" 
-                                                         alt="<?php echo sanitize_output($category['name']); ?>" 
-                                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <?php
+                                                    $image = $category['image'];
+                                                    $image_src = (filter_var($image, FILTER_VALIDATE_URL))
+                                                        ? $image
+                                                        : 'uploads/' . ltrim($image, '/');
+                                                    ?>
+                                                    <img src="<?php echo sanitize_output($image_src); ?>"
+                                                        alt="<?php echo sanitize_output($category['name']); ?>"
+                                                        style="width: 50px; height: 50px; object-fit: cover;">
+
                                                 <?php else: ?>
                                                     <span class="text-muted">No image</span>
                                                 <?php endif; ?>
@@ -220,21 +232,19 @@ $child_categories = get_child_categories();
                                             <td><?php echo sanitize_output($category['slug']); ?></td>
                                             <td><?php echo $child_count; ?></td>
                                             <td>
-                                                <button class="btn btn-sm btn-primary edit-category" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#categoryModal"
-                                                        data-category-id="<?php echo $category['id']; ?>"
-                                                        data-category-name="<?php echo sanitize_output($category['name']); ?>"
-                                                        data-category-description="<?php echo sanitize_output($category['description']); ?>"
-                                                        data-category-type="parent">
+                                                <button class="btn btn-sm btn-primary edit-category" data-bs-toggle="modal"
+                                                    data-bs-target="#categoryModal"
+                                                    data-category-id="<?php echo $category['id']; ?>"
+                                                    data-category-name="<?php echo sanitize_output($category['name']); ?>"
+                                                    data-category-description="<?php echo sanitize_output($category['description']); ?>"
+                                                    data-category-type="parent">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-danger delete-category"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#deleteCategoryModal"
-                                                        data-category-id="<?php echo $category['id']; ?>"
-                                                        data-category-name="<?php echo sanitize_output($category['name']); ?>"
-                                                        data-category-type="parent">
+                                                <button class="btn btn-sm btn-danger delete-category" data-bs-toggle="modal"
+                                                    data-bs-target="#deleteCategoryModal"
+                                                    data-category-id="<?php echo $category['id']; ?>"
+                                                    data-category-name="<?php echo sanitize_output($category['name']); ?>"
+                                                    data-category-type="parent">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </td>
@@ -270,9 +280,16 @@ $child_categories = get_child_categories();
                                             <td><?php echo $category['id']; ?></td>
                                             <td>
                                                 <?php if (!empty($category['image'])): ?>
-                                                    <img src="../uploads/<?php echo sanitize_output($category['image']); ?>" 
-                                                         alt="<?php echo sanitize_output($category['name']); ?>" 
-                                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <?php
+                                                    $image = $category['image'];
+                                                    $image_src = (filter_var($image, FILTER_VALIDATE_URL))
+                                                        ? $image
+                                                        : 'uploads/' . ltrim($image, '/');
+                                                    ?>
+                                                    <img src="<?php echo sanitize_output($image_src); ?>"
+                                                        alt="<?php echo sanitize_output($category['name']); ?>"
+                                                        style="width: 50px; height: 50px; object-fit: cover;">
+
                                                 <?php else: ?>
                                                     <span class="text-muted">No image</span>
                                                 <?php endif; ?>
@@ -281,22 +298,20 @@ $child_categories = get_child_categories();
                                             <td><?php echo sanitize_output($category['slug']); ?></td>
                                             <td><?php echo sanitize_output($category['parent_name']); ?></td>
                                             <td>
-                                                <button class="btn btn-sm btn-primary edit-category" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#categoryModal"
-                                                        data-category-id="<?php echo $category['id']; ?>"
-                                                        data-category-name="<?php echo sanitize_output($category['name']); ?>"
-                                                        data-category-description="<?php echo sanitize_output($category['description']); ?>"
-                                                        data-category-parent-id="<?php echo $category['parent_id']; ?>"
-                                                        data-category-type="child">
+                                                <button class="btn btn-sm btn-primary edit-category" data-bs-toggle="modal"
+                                                    data-bs-target="#categoryModal"
+                                                    data-category-id="<?php echo $category['id']; ?>"
+                                                    data-category-name="<?php echo sanitize_output($category['name']); ?>"
+                                                    data-category-description="<?php echo sanitize_output($category['description']); ?>"
+                                                    data-category-parent-id="<?php echo $category['parent_id']; ?>"
+                                                    data-category-type="child">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-danger delete-category"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#deleteCategoryModal"
-                                                        data-category-id="<?php echo $category['id']; ?>"
-                                                        data-category-name="<?php echo sanitize_output($category['name']); ?>"
-                                                        data-category-type="child">
+                                                <button class="btn btn-sm btn-danger delete-category" data-bs-toggle="modal"
+                                                    data-bs-target="#deleteCategoryModal"
+                                                    data-category-id="<?php echo $category['id']; ?>"
+                                                    data-category-name="<?php echo sanitize_output($category['name']); ?>"
+                                                    data-category-type="child">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </td>
@@ -344,7 +359,8 @@ $child_categories = get_child_categories();
 
                         <div class="mb-3">
                             <label for="category-description" class="form-label">Mô Tả</label>
-                            <textarea class="form-control" id="category-description" name="description" rows="3"></textarea>
+                            <textarea class="form-control" id="category-description" name="description"
+                                rows="3"></textarea>
                         </div>
 
                         <div class="mb-3">
@@ -389,7 +405,7 @@ $child_categories = get_child_categories();
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const categoryForm = document.getElementById('categoryForm');
             const categoryAction = document.getElementById('category-action');
             const categoryId = document.getElementById('category-id');
@@ -398,10 +414,10 @@ $child_categories = get_child_categories();
             const categoryParent = document.getElementById('category-parent');
             const categoryIsParent = document.getElementById('category-is-parent');
             const parentCategoryGroup = document.getElementById('parent-category-group');
-            
+
             // Handle category type selection
             document.querySelectorAll('[data-category-type]').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const isParent = this.dataset.categoryType === 'parent';
                     categoryIsParent.value = isParent ? '1' : '0';
                     parentCategoryGroup.style.display = isParent ? 'none' : 'block';
@@ -410,10 +426,10 @@ $child_categories = get_child_categories();
                     categoryId.value = '';
                 });
             });
-            
+
             // Handle edit category
             document.querySelectorAll('.edit-category').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const isParent = this.dataset.categoryType === 'parent';
                     categoryAction.value = 'edit';
                     categoryId.value = this.dataset.categoryId;
@@ -421,16 +437,16 @@ $child_categories = get_child_categories();
                     categoryDescription.value = this.dataset.categoryDescription;
                     categoryIsParent.value = isParent ? '1' : '0';
                     parentCategoryGroup.style.display = isParent ? 'none' : 'block';
-                    
+
                     if (!isParent) {
                         categoryParent.value = this.dataset.categoryParentId;
                     }
                 });
             });
-            
+
             // Handle delete category
             document.querySelectorAll('.delete-category').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const isParent = this.dataset.categoryType === 'parent';
                     document.getElementById('delete-category-id').value = this.dataset.categoryId;
                     document.getElementById('delete-category-name').textContent = this.dataset.categoryName;
@@ -440,4 +456,5 @@ $child_categories = get_child_categories();
         });
     </script>
 </body>
-</html> 
+
+</html>

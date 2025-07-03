@@ -87,6 +87,7 @@ if (!$is_parent) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $is_parent ? $parent_category['name'] : $category['name']; ?> - Danh mục</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.6.1/dist/nouislider.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -129,12 +130,56 @@ if (!$is_parent) {
         font-weight: 400;
         pointer-events: none;
     }
+
+    /* === Tùy chỉnh slider noUiSlider === */
+    #price-slider {
+        margin-top: 10px;
+        height: 6px;
+        padding: 0;
+    }
+
+    .noUi-target {
+        background: #ddd;
+        border-radius: 4px;
+        height: 4px;
+        border: none;
+    }
+
+    .noUi-connect {
+        background: #dc3545;
+        /* Màu đỏ giữa 2 nút */
+    }
+
+    .noUi-handle {
+    all: unset;
+    position: absolute;
+    width: 10px !important;
+    height: 10px !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    border: 2px solid #dc3545 !important;
+    top: -3px !important;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+    .noUi-handle:hover {
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.4);
+    }
+
+    .noUi-handle:before,
+    .noUi-handle:after {
+        display: none;
+    }
 </style>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         const breadcrumb = document.querySelector(".custom-breadcrumb");
         if (breadcrumb) {
-            breadcrumb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            breadcrumb.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
         }
     });
 </script>
@@ -156,31 +201,50 @@ if (!$is_parent) {
                             <form id="filter-form" method="get" action="category.php">
                                 <input type="hidden" name="slug" value="<?php echo $slug; ?>">
 
-                                <!-- Price Range -->
+                                <!-- Slider Giá -->
                                 <div class="filter-section">
                                     <h6>Mức Giá</h6>
-                                    <div class="mb-3">
-                                        <label for="min-price" class="form-label">Từ</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="min-price" name="min_price"
-                                                value="<?php echo $min_price ?? ''; ?>"
-                                                min="<?php echo $min_price ?? ''; ?>" max="<?php echo $max_price ?? ''; ?>"
-                                                step="1000000">
-                                            <span class="input-group-text">₫</span>
-                                        </div>
+                                    <div id="price-slider"></div>
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <span id="slider-min-display"></span>
+                                        <span id="slider-max-display"></span>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="max-price" class="form-label">Đến</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="max-price" name="max_price"
-                                                value="<?php echo $max_price ?? ''; ?>"
-                                                min="<?php echo $min_price ?? ''; ?>" max="<?php echo $max_price ?? ''; ?>"
-                                                step="1000000">
-                                            <span class="input-group-text">₫</span>
-                                        </div>
-                                    </div>
+                                    <input type="hidden" name="min_price" id="min-price-input">
+                                    <input type="hidden" name="max_price" id="max-price-input">
+                                </div>
+                                <h6 class="mb-2">Khoảng giá</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="priceAll" value="" checked onclick="clearPriceRange()">
+                                    <label class="form-check-label" for="priceAll">Tất cả</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="price1" onclick="setPriceRange(null, 10000000)">
+                                    <label class="form-check-label" for="price1">Dưới 10 triệu</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="price2" onclick="setPriceRange(10000000, 15000000)">
+                                    <label class="form-check-label" for="price2">Từ 10 - 15 triệu</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="price3" onclick="setPriceRange(15000000, 20000000)">
+                                    <label class="form-check-label" for="price3">Từ 15 - 20 triệu</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="price4" onclick="setPriceRange(20000000, 25000000)">
+                                    <label class="form-check-label" for="price4">Từ 20 - 25 triệu</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="price5" onclick="setPriceRange(25000000, 30000000)">
+                                    <label class="form-check-label" for="price5">Từ 25 - 30 triệu</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="price_range" id="price6" onclick="setPriceRange(30000000, null)">
+                                    <label class="form-check-label" for="price6">Trên 30 triệu</label>
                                 </div>
 
+                                <!-- Hidden fields để submit về PHP -->
+                                <input type="hidden" name="min_price" id="min-price" value="<?php echo $min_price ?? ''; ?>">
+                                <input type="hidden" name="max_price" id="max-price" value="<?php echo $max_price ?? ''; ?>">
                                 <!-- Manufacturers -->
                                 <div class="filter-section mt-3">
                                     <h6>Thương Hiệu</h6>
@@ -193,16 +257,16 @@ if (!$is_parent) {
                                     <h6>Sắp Xếp</h6>
                                     <select class="form-select" name="sort">
                                         <option value="newest" <?php if ($sort == 'newest')
-                                            echo 'selected'; ?>>Mới nhất
+                                                                    echo 'selected'; ?>>Mới nhất
                                         </option>
                                         <option value="price_low" <?php if ($sort == 'price_low')
-                                            echo 'selected'; ?>>Giá tăng
+                                                                        echo 'selected'; ?>>Giá tăng
                                             dần</option>
                                         <option value="price_high" <?php if ($sort == 'price_high')
-                                            echo 'selected'; ?>>Giá
+                                                                        echo 'selected'; ?>>Giá
                                             giảm dần</option>
                                         <option value="name" <?php if ($sort == 'name')
-                                            echo 'selected'; ?>>Tên A-Z</option>
+                                                                    echo 'selected'; ?>>Tên A-Z</option>
                                     </select>
                                 </div>
 
@@ -265,8 +329,8 @@ if (!$is_parent) {
                                 // Mảng nhiều chiều
                                 foreach ($original_child_categories as $group) {
                                     foreach ($group as $child) {
-                                        ?>
-                                        <div class="col-md-6 mb-4">
+                            ?>
+                                        <div class="col-md-6 mb-4">z
                                             <div class="card h-100">
                                                 <?php if (!empty($child['image'])): ?>
                                                     <img src="<?php echo htmlspecialchars($child['image']); ?>" class="card-img-top"
@@ -282,7 +346,7 @@ if (!$is_parent) {
                                                 </div>
                                             </div>
                                         </div>
-                                        <?php
+                                    <?php
                                     }
                                 }
                             } else {
@@ -305,7 +369,7 @@ if (!$is_parent) {
                                             </div>
                                         </div>
                                     </div>
-                                    <?php
+                            <?php
                                 }
                             }
                             ?>
@@ -390,7 +454,64 @@ if (!$is_parent) {
     <?php include 'includes/footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nouislider@15.6.1/dist/nouislider.min.js"></script>
     <script src="assets/js/main.js"></script>
+    <script>
+        const priceSlider = document.getElementById('price-slider');
+        const minDisplay = document.getElementById('slider-min-display');
+        const maxDisplay = document.getElementById('slider-max-display');
+        const minInput = document.getElementById('min-price-input');
+        const maxInput = document.getElementById('max-price-input');
+
+        const minStart = <?php echo $min_price ?? 1000000; ?>;
+        const maxStart = <?php echo $max_price ?? 50000000; ?>;
+
+        noUiSlider.create(priceSlider, {
+            start: [minStart, maxStart],
+            connect: true,
+            step: 1000000,
+            range: {
+                min: 0,
+                max: 50000000
+            },
+            format: {
+                to: value => Math.round(value),
+                from: value => Number(value)
+            }
+        });
+
+        function formatCurrency(value) {
+            return Number(value).toLocaleString('vi-VN') + ' ₫';
+        }
+
+        priceSlider.noUiSlider.on('update', function(values) {
+            minDisplay.textContent = "Từ: " + formatCurrency(values[0]);
+            maxDisplay.textContent = "Đến: " + formatCurrency(values[1]);
+            minInput.value = values[0];
+            maxInput.value = values[1];
+        });
+    </script>
+    <script>
+        function setPriceRange(min, max) {
+            const minInput = document.getElementById('min-price');
+            const maxInput = document.getElementById('max-price');
+            if (minInput) minInput.value = min ?? '';
+            if (maxInput) maxInput.value = max ?? '';
+        }
+    </script>
+    <script>
+        function setPriceRange(min, max) {
+            document.getElementById('min-price').value = min ?? '';
+            document.getElementById('max-price').value = max ?? '';
+        }
+
+        function clearPriceRange() {
+            document.getElementById('min-price').value = '';
+            document.getElementById('max-price').value = '';
+        }
+    </script>
+
+
     <script src="assets/js/search-autocomplete.js"></script>
 </body>
 

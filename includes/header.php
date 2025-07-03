@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/functions.php';
+include 'includes/cart_icon.php'; // Include the cart icon
 $site_name = get_setting('site_name') ?: 'Chưa có tên website';
 $logo = get_setting('logo');
 ?>

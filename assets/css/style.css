@@ -75,7 +75,6 @@ header {
     margin-bottom: 1.5rem;
     overflow: hidden;
 }
-
 .card-img-top {
     transition: transform 0.3s ease; /* Hiệu ứng chuyển động mượt */
   }

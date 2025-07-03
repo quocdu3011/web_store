@@ -77,6 +77,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     if ($stmt->execute()) {
                         $message = $action == 'add' ? 'Thêm sản phẩm thành công' : 'Cập nhật sản phẩm thành công';
+                        // Lưu thông số sản phẩm
+                        $new_product_id = $action == 'add' ? $conn->insert_id : $product_id;
+                        if (isset($_POST['spec_name'], $_POST['spec_value'])) {
+                            $spec_names = $_POST['spec_name'];
+                            $spec_values = $_POST['spec_value'];
+                            // Nếu là sửa thì xóa thông số cũ
+                            if ($action == 'edit') {
+                                $conn->query("DELETE FROM product_specs WHERE product_id = " . (int)$new_product_id);
+                            }
+                            $insert_spec = $conn->prepare("INSERT INTO product_specs (product_id, spec_name, spec_value) VALUES (?, ?, ?)");
+                            for ($i = 0; $i < count($spec_names); $i++) {
+                                $name = trim($spec_names[$i]);
+                                $value = trim($spec_values[$i]);
+                                if ($name !== '' && $value !== '') {
+                                    $insert_spec->bind_param("iss", $new_product_id, $name, $value);
+                                    $insert_spec->execute();
+                                }
+                            }
+                        }
                     } else {
                         $error = 'Lỗi: ' . $stmt->error;
                     }
@@ -267,6 +286,24 @@ $categories = get_child_categories();
                             <div id="current-image" class="mt-2"></div>
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label">Thông Số Sản Phẩm</label>
+                            <div id="specs-container">
+                                <div class="row mb-2 spec-row">
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control" name="spec_name[]" placeholder="Tên thông số">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control" name="spec_value[]" placeholder="Giá trị">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-danger remove-spec">Xóa</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="add-spec">Thêm thông số</button>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3 form-check">
@@ -331,6 +368,48 @@ $categories = get_child_categories();
                 form.elements['manufacturer'].value = product.manufacturer;
                 form.elements['price'].value = product.price;
                 form.elements['description'].value = product.description;
+
+                // Load product specs
+                fetch('get_product_specs.php?product_id=' + product.id)
+                    .then(res => res.json())
+                    .then(specs => {
+                        const container = document.getElementById('specs-container');
+                        container.innerHTML = '';
+                        if (specs.length === 0) {
+                            // Nếu không có thông số, thêm 1 dòng trống
+                            const row = document.createElement('div');
+                            row.className = 'row mb-2 spec-row';
+                            row.innerHTML = `
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control" name="spec_name[]" placeholder="Tên thông số">
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control" name="spec_value[]" placeholder="Giá trị">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-danger remove-spec">Xóa</button>
+                                </div>
+                            `;
+                            container.appendChild(row);
+                        } else {
+                            specs.forEach(spec => {
+                                const row = document.createElement('div');
+                                row.className = 'row mb-2 spec-row';
+                                row.innerHTML = `
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control" name="spec_name[]" value="${spec.spec_name}" placeholder="Tên thông số">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control" name="spec_value[]" value="${spec.spec_value}" placeholder="Giá trị">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-danger remove-spec">Xóa</button>
+                                    </div>
+                                `;
+                                container.appendChild(row);
+                            });
+                        }
+                    });
             });
         });
 
@@ -354,6 +433,30 @@ $categories = get_child_categories();
             form.elements['action'].value = 'add';
             form.elements['product_id'].value = '';
         });
+
+        // Thêm/xóa dòng thông số sản phẩm
+        document.getElementById('add-spec').addEventListener('click', function() {
+            const container = document.getElementById('specs-container');
+            const row = document.createElement('div');
+            row.className = 'row mb-2 spec-row';
+            row.innerHTML = `
+                <div class="col-md-5">
+                    <input type="text" class="form-control" name="spec_name[]" placeholder="Tên thông số">
+                </div>
+                <div class="col-md-5">
+                    <input type="text" class="form-control" name="spec_value[]" placeholder="Giá trị">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger remove-spec">Xóa</button>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+        document.getElementById('specs-container').addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-spec')) {
+                e.target.closest('.spec-row').remove();
+            }
+        });
     </script>
 </body>
-</html> 
+</html>

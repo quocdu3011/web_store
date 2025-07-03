@@ -519,3 +519,14 @@ function get_rating_stars($rating, $rating_count = 1) {
     }
     return $stars;
 }
+function get_discounted_price($product) {
+    $now = date('Y-m-d H:i:s');
+    if ($product['discount_price'] !== null && 
+        $product['discount_start_date'] !== null && 
+        $product['discount_end_date'] !== null && 
+        $now >= $product['discount_start_date'] && 
+        $now <= $product['discount_end_date']) {
+        return ($product['price'] - $product['discount_price']) / $product['price'] * 100;
+    }
+    return $product['price'];
+}

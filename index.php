@@ -150,7 +150,7 @@ if (isset($_SESSION['success_message'])) {
                                 <?php endif; ?>
                                 <?php if ($has_discount): ?>
                                     <div class="position-absolute top-0 start-0 p-2">
-                                        <span class="badge bg-danger">Giảm giá</span>
+                                        <span class="badge bg-danger">Giảm <?php echo get_discounted_price($product) ?>%</span>
                                     </div>
                                 <?php endif; ?>
                             </div>

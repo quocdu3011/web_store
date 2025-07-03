@@ -10,6 +10,27 @@ $logo = get_setting('logo');
 <style>
     .header-container {
         background-color: #dc3545;
+        transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.3s ease;
+    }
+
+    .header-container.fixed {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .header-container.hidden {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    /* Hiện lại header */
+    .header-container.visible {
+        transform: translateY(0);
+        opacity: 1;
     }
 
     .header-logo {
@@ -113,7 +134,6 @@ $logo = get_setting('logo');
 <header class="header-container text-white">
     <div class="container">
         <div class="row py-3 align-items-center">
-
             <!-- LOGO -->
             <div class="col-md-4">
                 <a href="index.php" class="text-decoration-none">
@@ -211,5 +231,26 @@ $logo = get_setting('logo');
         window.addEventListener('resize', function () {
             dropdown.classList.remove('show');
         });
+    });
+    let lastScroll = 0;
+    const header = document.getElementsByClassName('header-container')[0];
+
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.pageYOffset;
+
+      if (currentScroll <= 50) {
+        // Gần đầu trang → trở lại trạng thái bình thường
+        header.classList.remove('fixed', 'hidden', 'visible');
+      } else if (currentScroll > lastScroll && currentScroll > 100) {
+        // Cuộn xuống > 100px → ẩn header
+        header.classList.add('fixed', 'hidden');
+        header.classList.remove('visible');
+      } else if (currentScroll < lastScroll) {
+        // Cuộn lên → hiện lại header dạng fixed
+        header.classList.add('fixed', 'visible');
+        header.classList.remove('hidden');
+      }
+
+      lastScroll = currentScroll;
     });
 </script>

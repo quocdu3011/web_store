@@ -46,7 +46,17 @@ document.addEventListener('DOMContentLoaded', function () {
         addToCartButtons.forEach(button => {
             button.addEventListener('click', function () {
                 const productId = this.dataset.productId;
-                const quantity = 1; // Default quantity
+                let quantity = 1; // Default quantity
+                const productItem = this.closest('.product-item');
+                if (productItem) {
+                    const quantityInput = productItem.querySelector('#product-quantity');
+                    if (quantityInput) {
+                        const inputQuantity = parseInt(quantityInput.value);
+                        if (!isNaN(inputQuantity) && inputQuantity > 0) {
+                            quantity = inputQuantity;
+                        }
+                    }
+                }
 
                 addToCart(productId, quantity, this);
             });

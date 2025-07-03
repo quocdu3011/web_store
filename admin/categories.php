@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $category_id = $_POST['category_id'] ?? null;
         $name = $_POST['name'] ?? '';
         $description = $_POST['description'] ?? '';
-        $is_parent = isset($_POST['is_parent']) ? true : false;
+        $is_parent = (isset($_POST['is_parent']) && $_POST['is_parent'] == '1') ? true : false;
         $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
         
         if (empty($name)) {

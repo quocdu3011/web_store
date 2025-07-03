@@ -70,10 +70,10 @@ if (isset($_SESSION['success_message'])) {
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
-                            <i class="fas fa-gift"></i> Giảm 10% cho đơn hàng trên 20 triệu
+                            <i class="fas fa-gift"></i> Giảm 10% cho tất cả đơn hàng
                         </div>
                         <div class="alert alert-success">
-                            <i class="fas fa-truck"></i> Miễn phí vận chuyển nội thành
+                            <i class="fas fa-truck"></i> Miễn phí vận chuyển
                         </div>
                     </div>
                 </div>

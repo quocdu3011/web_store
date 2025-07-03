@@ -183,7 +183,7 @@ $logo = get_setting('logo');
                             <a href="account.php"><i class="bi bi-person-circle"></i> Thông tin tài khoản</a>
                             <a href="my_orders.php"><i class="fas fa-box-open me-1"></i> Đơn hàng</a>
                             <a href="notifications.php"><i class="bi bi-bell-fill"></i> Thông báo</a>
-                            <?php if ($role === 'admin'): ?>
+                            <?php if ($role === 'admin' || $role === 'staff'): ?>
                                 <a href="admin/dashboard.php"><i class="bi bi-speedometer2"></i> Bảng quản trị</a>
                             <?php endif; ?>
                             <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>

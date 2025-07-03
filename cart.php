@@ -152,7 +152,8 @@ $total = $subtotal + $shipping_cost;
                                     <span>Số lượng: <?php echo $item['quantity']; ?></span>
                                     <div class="text-end">
                                         <div class="fw-bold item-subtotal">
-                                            <?php echo number_format($item['subtotal'], 0, ',', '.') . '₫'; ?></div>
+                                            <?php echo number_format($item['subtotal'], 0, ',', '.') . '₫'; ?>
+                                        </div>
                                         <small
                                             class="text-muted"><?php echo number_format($item['price_display'], 0, ',', '.') . '₫ / sản phẩm'; ?></small>
                                     </div>
@@ -173,6 +174,10 @@ $total = $subtotal + $shipping_cost;
     </div>
 
     <?php //include 'includes/footer.php'; ?>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/main.js"></script>
     <script>
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const selectAllCheckbox = document.getElementById('select-all');
@@ -188,54 +193,12 @@ $total = $subtotal + $shipping_cost;
             document.querySelector('.cart-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
         }
 
+        // Gán sự kiện thay đổi checkbox sản phẩm
         checkboxes.forEach(cb => {
             cb.addEventListener('change', updateCartSummary);
         });
 
-        selectAllCheckbox.addEventListener('change', function () {
-            checkboxes.forEach(cb => cb.checked = this.checked);
-            updateCartSummary();
-        });
-
-        updateCartSummary();
-
-        buyButton.addEventListener('click', function () {
-            const selectedIds = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.dataset.productId);
-
-            if (selectedIds.length === 0) {
-                alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.");
-                return;
-            }
-
-            // Chuyển tới trang checkout.php và truyền danh sách id qua URL
-            const url = `checkout.php?products=${selectedIds.join(',')}`;
-            window.location.href = url;
-        });
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script>
-
-        const checkboxes = document.querySelectorAll('.product-checkbox');
-        const selectAllCheckbox = document.getElementById('select-all');
-
-        function updateCartSummary() {
-            let subtotal = 0;
-            checkboxes.forEach(cb => {
-                if (cb.checked) {
-                    subtotal += parseInt(cb.getAttribute('data-subtotal'));
-                }
-            });
-            document.querySelector('.cart-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
-        }
-
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', updateCartSummary);
-        });
-
+        // Gán sự kiện chọn tất cả
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', function () {
                 checkboxes.forEach(cb => cb.checked = this.checked);
@@ -243,11 +206,31 @@ $total = $subtotal + $shipping_cost;
             });
         }
 
+        // Cập nhật tổng tiền ban đầu
         updateCartSummary();
 
+        // Xử lý nút mua ngay
+        if (buyButton) {
+            buyButton.addEventListener('click', function () {
+                const selectedIds = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.dataset.productId);
+
+                if (selectedIds.length === 0) {
+                    alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.");
+                    return;
+                }
+
+                const url = `checkout.php?products=${selectedIds.join(',')}`;
+                window.location.href = url;
+            });
+        }
+
+        // Xử lý xóa sản phẩm
         document.querySelectorAll('.remove-from-cart').forEach(button => {
             button.addEventListener('click', () => {
                 const productId = button.dataset.productId;
+
                 fetch('includes/remove_from_cart.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -255,15 +238,36 @@ $total = $subtotal + $shipping_cost;
                 })
                     .then(res => res.json())
                     .then(data => {
+                        if (data.login) {
+                            window.location.href = 'login.php';
+                            return;
+                        }
+
                         if (data.success) {
-                            document.querySelector(`.cart-item[data-product-id="${productId}"]`).remove();
+                            const item = document.querySelector(`.cart-item[data-product-id="${productId}"]`);
+                            if (item) {
+                                item.classList.add('opacity-50');
+                                setTimeout(() => item.remove(), 300);
+                            }
+
                             document.querySelectorAll('.cart-count').forEach(el => el.textContent = data.cartCount || 0);
                             updateCartSummary();
+
+                            if (document.querySelectorAll('.cart-item').length === 0) {
+                                location.reload();
+                            }
+                        } else {
+                            alert(data.message || 'Có lỗi xảy ra khi xóa sản phẩm khỏi giỏ hàng.');
                         }
+                    })
+                    .catch(err => {
+                        console.error('Xóa sản phẩm lỗi:', err);
+                        alert('Lỗi hệ thống. Vui lòng thử lại.');
                     });
             });
         });
     </script>
+
 </body>
 
 </html>

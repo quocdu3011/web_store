@@ -175,7 +175,7 @@ $categories = get_child_categories();
                                 <tr>
                                     <td><?php echo $product['id']; ?></td>
                                     <td>
-                                        <img src="<?php echo $product['image'] ? '../uploads/' . sanitize_output($product['image']) : '../assets/images/no-image.jpg'; ?>"
+                                        <img src="<?php echo filter_var($product['image'], FILTER_VALIDATE_URL) ? $product['image'] : 'uploads/' . $product['image']; ?>"
                                              alt="<?php echo sanitize_output($product['name']); ?>"
                                              style="width: 50px; height: 50px; object-fit: cover;">
                                     </td>

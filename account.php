@@ -37,53 +37,18 @@ if ($stmt) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .account-sidebar .card {
-            border-radius: 0.5rem;
-            border: 2px solid #198754;
-            /* Bootstrap success */
-        }
-
-        .account-sidebar .card-header {
-            background-color: #198754;
-            color: #fff;
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
-        }
-
-        .account-sidebar .list-group-item.active {
-            background-color: #198754;
-            border: none;
-        }
-    </style>
 </head>
 
 <body>
     <?php include 'includes/header.php'; ?>
     <?php include 'includes/navigation.php'; ?>
 
-    <?php if (isset($_SESSION['message'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($_SESSION['message']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php unset($_SESSION['message']); endif; ?>
-
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($_SESSION['error']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php unset($_SESSION['error']); endif; ?>
-
-
     <div class="container my-4">
         <div class="row">
             <!-- Account Sidebar -->
-            <!-- Account Sidebar -->
-            <div class="col-md-3">
-                <div class="card shadow-sm rounded border border-success">
-                    <div class="card-header bg-success text-white rounded-top">
+            <div class="col-md-3 d-none">
+                <div class="card">
+                    <div class="card-header">
                         <h5 class="card-title mb-0">My Account</h5>
                     </div>
                     <div class="list-group list-group-flush">
@@ -97,14 +62,13 @@ if ($stmt) {
                 </div>
             </div>
 
-
             <!-- Account Content -->
-            <div class="col-md-9">
+            <div class="col-md-8 mx-auto" style="float: none">
                 <div class="tab-content">
                     <!-- Profile Tab -->
                     <div class="card p-4">
                         <div class="text-center">
-                            <img src="<?php echo !empty($user['avatar']) ? htmlspecialchars($user['avatar']) : 'https://media.tenor.com/DFfCL02_DCcAAAAM/cat-look.gif'; ?>"
+                            <img src="<?php echo !empty($user['avatar']) ? htmlspecialchars($user['avatar']) : 'assets\img\default-avatar.png'; ?>"
                                 class="rounded-circle border border-info shadow-sm" width="100" alt="Avatar">
                             <h4 class="mt-2"><?php echo htmlspecialchars($user['full_name']); ?></h4>
                             <div class="text-primary fw-bold"><?php echo ucfirst($user['role']); ?></div>
@@ -139,22 +103,7 @@ if ($stmt) {
                                 <p><strong>Hoạt động:</strong> <?php echo htmlspecialchars($user['updated_at']); ?></p>
                             </div>
                         </div>
-                    </div>
-
-
-
-
-                    <!-- Settings Tab -->
-                    <div class="tab-pane fade" id="settings">
-                        <div class="card p-4">
-                            <div class="text-center">
-                                <h4 class="mt-2">Cài đặt Tài khoản</h4>
-                                <div class="text-primary fw-bold">Quản lý bảo mật & xoá tài khoản</div>
-                            </div>
-
-                            <hr>
-
-                            <h5 class="fw-bold border-start border-4 border-success ps-2">ĐỔI MẬT KHẨU</h5>
+                        <h5 class="fw-bold border-start border-4 border-success ps-2">ĐỔI MẬT KHẨU</h5>
                             <form method="POST" action="update_password.php" class="ps-4 pt-2">
                                 <div class="mb-3">
                                     <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
@@ -185,7 +134,6 @@ if ($stmt) {
                                     Xoá Tài khoản
                                 </button>
                             </div>
-                        </div>
                     </div>
 
                 </div>
@@ -220,14 +168,13 @@ if ($stmt) {
     <!-- Modal chỉnh sửa -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content border border-success rounded shadow-sm">
+            <div class="modal-content">
                 <form method="POST" action="update_user.php">
-                    <div class="modal-header bg-success text-white rounded-top">
+                    <div class="modal-header">
                         <h5 class="modal-title" id="editModalLabel">Chỉnh sửa thông tin</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <!-- Các input giữ nguyên -->
                         <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Họ và tên</label>
@@ -252,13 +199,12 @@ if ($stmt) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" name="update_profile" class="btn btn-success">Lưu thay đổi</button>
+                        <button type="submit" name="update_profile" class="btn btn-primary">Lưu thay đổi</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
 
 
     <?php include 'includes/footer.php'; ?>

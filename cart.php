@@ -32,6 +32,44 @@ $total = $subtotal + $shipping_cost;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            height: 15px;
+            width: 15px;
+            background-color:rgb(213, 213, 213);
+            border-radius: 1px;
+            cursor: pointer;
+            display: flex;
+            outline: none;
+        }
+        .form-check-label {
+            color: #4c4c4c;
+            font-size: 14px;
+            font-family: "Poppins", sans-serif;
+            cursor: pointer;
+        }
+        input[type="checkbox"]:after {
+            font-family: "Font Awesome 6 Free";
+            content: "\f00c";
+            font-weight: 900;
+            font-size: 12px;
+            color: #fff;
+            display: none;
+        }
+        .product-checkbox{
+            margin-left: 10px;
+        }
+        input[type="checkbox"]:hover {
+            background-color: #a5a5a5;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #0083e8;
+        }
+        
+
+    </style>
 </head>
 
 <body>
@@ -52,7 +90,7 @@ $total = $subtotal + $shipping_cost;
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="select-all">
                     <label class="form-check-label" for="select-all">
-                        Chọn tất cả
+                        <h5>Chọn tất cả</h5>
                     </label>
                 </div>
                 <div class="row">
@@ -111,7 +149,7 @@ $total = $subtotal + $shipping_cost;
 
                     <!-- Order Summary -->
                     <div class="col-md-4">
-                        <div class="card">
+                        <div class="card sticky-top" style="top: 1px;" id="order-summary">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">Tóm Tắt Đơn Hàng</h5>
                             </div>
@@ -241,6 +279,42 @@ $total = $subtotal + $shipping_cost;
                 }
 
             });
+
+            // chọn tất cả checkbox và cập nhật tổng tiền
+            const selectAllCheckbox = document.getElementById('select-all');
+            const productCheckboxes = document.querySelectorAll('.product-checkbox');
+
+            function updateCartSummary() {
+                let subtotal = 0;
+                productCheckboxes.forEach(cb => {
+                    if (cb.checked) {
+                        subtotal += parseInt(cb.getAttribute('data-subtotal'));
+                    }
+                });
+
+                const shipping = parseInt(document.querySelector('.cart-shipping').textContent.replace(/\D/g, ''));
+                const total = subtotal > 0 ? subtotal + shipping : 0;
+
+                document.querySelector('.cart-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
+                document.querySelector('.cart-total').textContent = total.toLocaleString('vi-VN') + '₫';
+            }
+
+            selectAllCheckbox.addEventListener('change', function () {
+                productCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+                updateCartSummary();
+            });
+
+            productCheckboxes.forEach(cb => {
+                cb.addEventListener('change', function () {
+                    const allChecked = Array.from(productCheckboxes).every(checkbox => checkbox.checked);
+                    selectAllCheckbox.checked = allChecked;
+                    updateCartSummary();
+                });
+            });
+
+            // Đảm bảo tổng khởi tạo = 0 nếu chưa chọn
+            updateCartSummary();
+
         </script>
 
 </body>
